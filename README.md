@@ -1,6 +1,6 @@
-# meta_uni_app
+# MetaUni-MetaUniApp
 
-MetaUniApp
+MetaUniApp built with Flutter(Dart).
 
 ## Getting Started
 
