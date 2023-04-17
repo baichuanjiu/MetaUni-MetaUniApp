@@ -1,0 +1,80 @@
+import 'dart:async';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
+//单例模式构建DatabaseManager
+class DatabaseManager {
+  static final DatabaseManager _instance = DatabaseManager._();
+
+  DatabaseManager._();
+
+  factory DatabaseManager() {
+    return _instance;
+  }
+
+  //登录时决定选择使用的数据库（以登录用户的UUID命名）
+  static String? _databaseName;
+  static Database? _database;
+
+  //由开发者定义版本，数据库架构发生改变时可以进行迁移
+  static const int _version = 1;
+
+  setDatabaseName(String databaseName) {
+    _databaseName = databaseName;
+  }
+
+  getDatabaseName() {
+    return _databaseName;
+  }
+
+  //退出登录时，将_database置为空并关闭数据库连接
+  closeDatabase() async {
+    _database = null;
+    await _database?.close();
+  }
+
+  //删除整个数据库
+  dropDatabase() async {
+    await deleteDatabase(
+      join(await getDatabasesPath(), _databaseName),
+    );
+  }
+
+  Future<Database> get getDatabase async {
+    return _database ??= await _initDatabase();
+  }
+
+  Future<Database> _initDatabase() async {
+    return await openDatabase(
+      join(await getDatabasesPath(), _databaseName),
+      version: _version,
+      //首次创建数据库时，将调用_onCreate方法，并标注数据库版本号为_version
+      onCreate: _onCreate,
+      //如果传入的版本号高于当前该数据库使用的版本，那么将调用_onUpgrade方法
+      onUpgrade: _onUpgrade,
+      //如果传入的版本号低于当前该数据库使用的版本，那么将删除数据库并重新调用_onCreate方法
+      onDowngrade: onDatabaseDowngradeDelete,
+    );
+  }
+
+  _onCreate(Database database, int version) async {
+    await database.execute('CREATE TABLE briefUserInformation(uuid INTEGER PRIMARY KEY, avatar TEXT, nickname TEXT,updatedTime INTEGER)');
+    await database.execute(
+        'CREATE TABLE userSynchronizationTable(uuid INTEGER PRIMARY KEY,sequenceForCommonMessages INTEGER,sequenceForSystemMessages INTEGER,updatedTimeForFriendsGroups INTEGER,updatedTimeForFriendShips INTEGER,updatedTimeForChats INTEGER,updatedTimeForFriendsBriefInformation INTEGER)');
+    await database.execute('CREATE TABLE friendsGroup(friendsGroupId INTEGER PRIMARY KEY,userId INTEGER,orderNumber INTEGER,friendsGroupName TEXT,friends TEXT,isDeleted INTEGER,updatedTime INTEGER)');
+    await database
+        .execute('CREATE TABLE friendShip(friendShipId INTEGER PRIMARY KEY,userId INTEGER,friendId INTEGER,shipCreatedTime INTEGER,remark TEXT,isFocus INTEGER,isDeleted INTEGER,updatedTime INTEGER)');
+    await database.execute(
+        'CREATE TABLE chat(chatId INTEGER PRIMARY KEY,targetId INTEGER,isWithOtherUser INTEGER,isWithGroup INTEGER,isWithSystem INTEGER,isStickyOnTop INTEGER,isDeleted INTEGER,numberOfUnreadMessages INTEGER,lastMessageId INTEGER,isRead INTEGER,updatedTime INTEGER)');
+    await database.execute(
+        'CREATE TABLE commonMessage(messageId INTEGER PRIMARY KEY,chatId INTEGER,senderId INTEGER,receiverId INTEGER,createdTime INTEGER,isCustom INTEGER,isRecalled INTEGER,isDeleted INTEGER,isReply INTEGER,isImageMessage INTEGER,isVoiceMessage INTEGER,customType TEXT,minimumSupportVersion TEXT,textOnError TEXT,customMessageContent TEXT,messageReplied INTEGER,messageText TEXT,messageImage TEXT,messageVoice TEXT,sequence INTEGER)');
+    //await database.execute("");
+    //await database.execute("");
+  }
+
+  _onUpgrade(Database database, int oldVersion, int newVersion) async {
+    // if(oldVersion == 1){
+    //   await database.execute("");
+    // }
+  }
+}
