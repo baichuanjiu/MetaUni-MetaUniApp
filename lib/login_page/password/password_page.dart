@@ -3,9 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:meta_uni_app/reusable_components/snack_bar/normal_snack_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
-
+import 'package:fast_rsa/fast_rsa.dart';
 import '../../database/database_manager.dart';
 import '../../database/models/user/brief_user_information.dart';
 import '../../database/models/user/user_synchronization_table.dart';
@@ -23,12 +24,15 @@ class PasswordPage extends StatefulWidget {
 
 class _PasswordPage extends State<PasswordPage> {
   late BriefPrivateProfile briefPrivateProfile;
+  late String rsaPublicKey;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    briefPrivateProfile = ModalRoute.of(context)!.settings.arguments as BriefPrivateProfile;
+    Map<String, dynamic> map = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    briefPrivateProfile = map['briefPrivateProfile'];
+    rsaPublicKey = map['rsaPublicKey'];
   }
 
   @override
@@ -66,7 +70,7 @@ class _PasswordPage extends State<PasswordPage> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(0, 5, 0, 5),
                     ),
-                    PasswordInputField(briefPrivateProfile.account),
+                    PasswordInputField(briefPrivateProfile.account, rsaPublicKey),
                   ],
                 ),
               ),
@@ -124,8 +128,9 @@ class PrivateNickname extends StatelessWidget {
 
 class PasswordInputField extends StatefulWidget {
   final String account;
+  final String rsaPublicKey;
 
-  const PasswordInputField(this.account, {super.key});
+  const PasswordInputField(this.account, this.rsaPublicKey, {super.key});
 
   @override
   State<PasswordInputField> createState() => _PasswordInputField();
@@ -143,12 +148,23 @@ class _PasswordInputField extends State<PasswordInputField> {
   login() async {
     try {
       Response response;
-      response = await dioModel.dio.post('/login', data: {
-        'account': widget.account,
-        'password': passwordController.text,
-      });
+      Uint8List byteRSAPassword = await RSA.encryptPKCS1v15Bytes(Uint8List.fromList(passwordController.text.codeUnits), widget.rsaPublicKey);
+      response = await dioModel.dio.post(
+        '/metaUni/userAPI/login',
+        data: {
+          'account': widget.account,
+          'password': String.fromCharCodes(byteRSAPassword),
+        },
+      );
       switch (response.data['code']) {
         case 1:
+          //Message:"登录超时，请重新尝试"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            Navigator.pushNamedAndRemoveUntil(context, '/account', (route) => false);
+          }
+          break;
+        case 2:
           //Message:"账号或密码错误"
           if (mounted) {
             passwordFocusNode.requestFocus();

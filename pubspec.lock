@@ -113,6 +113,14 @@ packages:
       url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub/"
     source: hosted
     version: "1.3.1"
+  fast_rsa:
+    dependency: "direct main"
+    description:
+      name: fast_rsa
+      sha256: "04e712f781e772fd5eff35aa19465ce2577f30203ca9adb9e37d4dd32929ed8f"
+      url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub/"
+    source: hosted
+    version: "3.5.6"
   ffi:
     dependency: transitive
     description:
@@ -129,6 +137,14 @@ packages:
       url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub/"
     source: hosted
     version: "6.1.4"
+  flat_buffers:
+    dependency: transitive
+    description:
+      name: flat_buffers
+      sha256: "23e2ced0d8e8ecdffbd9f267f49a668c74438393b9acaeac1c724123e3764263"
+      url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub/"
+    source: hosted
+    version: "2.0.5"
   flutter:
     dependency: "direct main"
     description: flutter

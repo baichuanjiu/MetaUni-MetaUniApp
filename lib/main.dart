@@ -58,7 +58,7 @@ class _MetaUni extends State<MetaUni> {
       try {
         Response response;
         response = await dioModel.dio.get(
-          '/login/check',
+          '/metaUni/userAPI/login/check',
           options: Options(headers: {
             'JWT': jwt,
             'UUID': uuid,

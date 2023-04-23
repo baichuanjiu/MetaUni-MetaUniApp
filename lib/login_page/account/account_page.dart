@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import '../../models/dio_model.dart';
 import '../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../models/brief_private_profile.dart';
@@ -86,7 +85,7 @@ class _AccountInputField extends State<AccountInputField> {
     try {
       Response response;
       response = await dioModel.dio.get(
-        '/login/check/${accountController.text}',
+        '/metaUni/userAPI/login/check/${accountController.text}',
       );
       switch (response.data['code']) {
         case 1:
@@ -103,7 +102,14 @@ class _AccountInputField extends State<AccountInputField> {
           accountController.clear();
           BriefPrivateProfile briefPrivateProfile = BriefPrivateProfile(response.data['data']['account'], response.data['data']['avatar'], response.data['data']['privateNickname']);
           if (mounted) {
-            Navigator.pushNamed(context, '/password',arguments: briefPrivateProfile);
+            Navigator.pushNamed(
+              context,
+              '/password',
+              arguments: {
+                'briefPrivateProfile': briefPrivateProfile,
+                'rsaPublicKey': response.data['data']['rsaPublicKey'],
+              },
+            );
           }
       }
     } catch (e) {
