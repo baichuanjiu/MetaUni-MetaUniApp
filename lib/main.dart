@@ -10,7 +10,7 @@ import 'home_page/home_page.dart';
 import 'home_page/me/settings/settings_page.dart';
 import 'home_page/me/settings/subpages/change_seed_color_page.dart';
 import 'home_page/reusable_components/image/view_image_page.dart';
-import 'home_page/reusable_components/profile/user_profile/user_profile_page.dart';
+import 'home_page/reusable_components/profile/user_profile_page.dart';
 import 'login_page/password/password_page.dart';
 import 'reusable_components/snack_bar/network_error_snack_bar.dart';
 import 'package:provider/provider.dart';
