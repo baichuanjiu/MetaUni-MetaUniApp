@@ -92,7 +92,7 @@ class _ContactsPageState extends State<ContactsPage>{
 
             UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
             userSyncTableProviderWithTransaction.update({
-              'updatedTimeForFriendsBriefInformation': updatedTime.toString(),
+              'updatedTimeForFriendsBriefInformation': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
       }
