@@ -6,7 +6,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../database/database_manager.dart';
 import '../../database/models/chat/chat.dart';
-import '../../database/models/friend/friend_ship.dart';
+import '../../database/models/friend/friendship.dart';
 import '../../database/models/message/common_message.dart';
 import '../../database/models/user/brief_user_information.dart';
 import 'chat_list_tile/chat_list_tile.dart';
@@ -35,7 +35,7 @@ class _ChatsPageState extends State<ChatsPage> {
     Database database = await DatabaseManager().getDatabase;
     ChatProvider chatProvider = ChatProvider(database);
 
-    FriendShipProvider friendShipProvider = FriendShipProvider(database);
+    FriendshipProvider friendShipProvider = FriendshipProvider(database);
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
     CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
 
@@ -64,7 +64,7 @@ class _ChatsPageState extends State<ChatsPage> {
               chat: chat,
               messagePreview: messagePreview,
               lastMessageCreatedTime: lastMessageCreatedTime,
-              briefChatTargetInformation: BriefChatTargetInformation(targetType: "user", uuid: chat.targetId, avatar: info.avatar, name: remark ?? info.nickname, updatedTime: info.updatedTime),
+              briefChatTargetInformation: BriefChatTargetInformation(targetType: "user", id: chat.targetId, avatar: info.avatar, name: remark ?? info.nickname, updatedTime: info.updatedTime),
             ),
           );
         }

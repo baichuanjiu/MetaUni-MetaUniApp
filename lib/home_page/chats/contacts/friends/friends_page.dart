@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lpinyin/lpinyin.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../database/database_manager.dart';
-import '../../../../database/models/friend/friend_ship.dart';
+import '../../../../database/models/friend/friendship.dart';
 import '../../../../database/models/user/brief_user_information.dart';
 import '../reusable_components/friend/friend_list_tile.dart';
 import '../reusable_components/friend/models/friend_list_tile_data.dart';
@@ -62,10 +62,10 @@ class _FriendsPageState extends State<FriendsPage>{
 
   initFriends() async{
     Database database = await DatabaseManager().getDatabase;
-    FriendShipProvider friendShipProvider = FriendShipProvider(database);
+    FriendshipProvider friendShipProvider = FriendshipProvider(database);
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
 
-    List<FriendShip> friendShips = await friendShipProvider.getAllNotDeleted();
+    List<Friendship> friendShips = await friendShipProvider.getAllNotDeleted();
     for(var friendShip in friendShips){
       BriefUserInformation? info = await briefUserInformationProvider.get(friendShip.friendId);
       if(info != null){

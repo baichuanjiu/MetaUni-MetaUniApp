@@ -1,41 +1,37 @@
 import 'package:sqflite/sqflite.dart';
 
 class FriendsGroup {
-  late int friendsGroupId; //主键
-  late int userId; //标识该好友分组属于谁，主体的UUID
+  late int id; //主键
+  late int uuid; //标识该好友分组属于谁，主体的UUID
   late int orderNumber; //标识主体对该好友分组的排序
   late String friendsGroupName; //主体对该好友分组的命名
-  late String friends; //哪些好友在该好友分组内，以JSON形式存储的Int数组，数组内容为friendShipId
   late bool isDeleted; //这一分组是否已被用户选择删除
   late DateTime updatedTime; //最后更新时间，用于实现增量更新
 
   FriendsGroup({
-    required this.friendsGroupId,
-    required this.userId,
+    required this.id,
+    required this.uuid,
     required this.orderNumber,
     required this.friendsGroupName,
-    required this.friends,
     this.isDeleted = false,
     required this.updatedTime,
   });
 
   FriendsGroup.fromJson(Map<String, dynamic> map) {
-    friendsGroupId = map['friendsGroupId'];
-    userId = map['userId'];
+    id = map['id'];
+    uuid = map['uuid'];
     orderNumber = map['orderNumber'];
     friendsGroupName = map['friendsGroupName'];
-    friends = map['friends'];
     isDeleted = map['isDeleted'];
     updatedTime = DateTime.parse(map['updatedTime']);
   }
 
   Map<String, dynamic> toSql() {
     return {
-      'friendsGroupId': friendsGroupId,
-      'userId': userId,
+      'id': id,
+      'uuid': uuid,
       'orderNumber': orderNumber,
       'friendsGroupName': friendsGroupName,
-      'friends': friends,
       'isDeleted': isDeleted ? 1 : 0,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
@@ -43,21 +39,19 @@ class FriendsGroup {
 
   Map<String, dynamic> toUpdateSql() {
     return {
-      'userId': userId,
+      'uuid': uuid,
       'orderNumber': orderNumber,
       'friendsGroupName': friendsGroupName,
-      'friends': friends,
       'isDeleted': isDeleted ? 1 : 0,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
   }
 
   FriendsGroup.fromSql(Map<String, dynamic> map) {
-    friendsGroupId = map['friendsGroupId'];
-    userId = map['userId'];
+    id = map['id'];
+    uuid = map['uuid'];
     orderNumber = map['orderNumber'];
     friendsGroupName = map['friendsGroupName'];
-    friends = map['friends'];
     isDeleted = map['isDeleted'] > 0;
     updatedTime = DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
   }
@@ -73,13 +67,13 @@ class FriendsGroupProvider {
     return true;
   }
 
-  Future<bool> update(Map<String, dynamic> values, int friendsGroupId) async {
-    await database.update('friendsGroup', values, where: "friendsGroupId=?", whereArgs: [friendsGroupId]);
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await database.update('friendsGroup', values, where: "id=?", whereArgs: [id]);
     return true;
   }
 
-  Future<FriendsGroup?> get(int friendsGroupId) async {
-    List<Map<String, dynamic>> maps = await database.query('friendsGroup', where: "friendsGroupId=?", whereArgs: [friendsGroupId]);
+  Future<FriendsGroup?> get(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('friendsGroup', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return FriendsGroup.fromSql(maps.first);
     }
@@ -97,8 +91,8 @@ class FriendsGroupProvider {
     return friendsGroups;
   }
 
-  Future<FriendsGroup?> getNotDeleted(int friendsGroupId) async {
-    List<Map<String, dynamic>> maps = await database.query('friendsGroup', where: "friendsGroupId=? & isDeleted=0", whereArgs: [friendsGroupId]);
+  Future<FriendsGroup?> getNotDeleted(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('friendsGroup', where: "id=? & isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return FriendsGroup.fromSql(maps.first);
     }
@@ -127,21 +121,21 @@ class FriendsGroupProviderWithTransaction{
     return true;
   }
 
-  Future<bool> update(Map<String, dynamic> values, int friendsGroupId) async {
-    await transaction.update('friendsGroup', values, where: "friendsGroupId=?", whereArgs: [friendsGroupId]);
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await transaction.update('friendsGroup', values, where: "id=?", whereArgs: [id]);
     return true;
   }
 
-  Future<FriendsGroup?> get(int friendsGroupId) async {
-    List<Map<String, dynamic>> maps = await transaction.query('friendsGroup', where: "friendsGroupId=?", whereArgs: [friendsGroupId]);
+  Future<FriendsGroup?> get(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('friendsGroup', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return FriendsGroup.fromSql(maps.first);
     }
     return null;
   }
 
-  Future<FriendsGroup?> getNotDeleted(int friendsGroupId) async {
-    List<Map<String, dynamic>> maps = await transaction.query('friendsGroup', where: "friendsGroupId=? & isDeleted=0", whereArgs: [friendsGroupId]);
+  Future<FriendsGroup?> getNotDeleted(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('friendsGroup', where: "id=? & isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return FriendsGroup.fromSql(maps.first);
     }

@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../database/database_manager.dart';
-import '../../../../database/models/friend/friend_ship.dart';
+import '../../../../database/models/friend/friendship.dart';
 import '../../../../database/models/friend/friends_group.dart';
 import '../../../../database/models/user/brief_user_information.dart';
 import '../reusable_components/friend/friend_list_tile.dart';
@@ -34,7 +33,8 @@ class _FriendsGroupsPageState extends State<FriendsGroupsPage> {
     friendsGroups.sort((a, b) => a.orderNumber.compareTo(b.orderNumber));
 
     for (var friendsGroup in friendsGroups) {
-      List<dynamic> tempList = jsonDecode(friendsGroup.friends);
+      FriendshipProvider friendShipProvider = FriendshipProvider(database);
+      List<dynamic> tempList = await friendShipProvider.getInGroup(friendsGroup.id);
       List<int> friends = [];
       for (int data in tempList) {
         friends.add(data);
@@ -50,12 +50,12 @@ class _FriendsGroupsPageState extends State<FriendsGroupsPage> {
 
   Future<Column> initFriendsInGroup(List<int> friends) async {
     Database database = await DatabaseManager().getDatabase;
-    FriendShipProvider friendShipProvider = FriendShipProvider(database);
+    FriendshipProvider friendShipProvider = FriendshipProvider(database);
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
 
     List<FriendListTile> tiles = [];
     for (int friend in friends) {
-      FriendShip? ship = await friendShipProvider.getNotDeleted(friend);
+      Friendship? ship = await friendShipProvider.getNotDeleted(friend);
       if (ship != null) {
         BriefUserInformation? info = await briefUserInformationProvider.get(ship.friendId);
         if (info != null) {

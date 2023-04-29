@@ -1,7 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 
 class Chat {
-  late int chatId; //主键
+  late int id; //主键
+  late int uuid; //标识这条Chat记录属于谁，主体的UUID
   late int targetId; //标识这条Chat记录是主体与谁进行的，客体的UUID，客体可以是OtherUser、Group、System
   late bool isWithOtherUser; //客体是OtherUser
   late bool isWithGroup; //客体是Group
@@ -10,24 +11,25 @@ class Chat {
   late bool isDeleted; //主体是否已将与客体的对话删除（暂时不显示在消息列表中，直到对话中下一条消息产生）
   late int numberOfUnreadMessages; //该会话中主体的未读消息数
   late int? lastMessageId; //该会话中最新一条消息的消息Id
-  late bool isRead; //该会话中的最新一条消息是否已读
   late DateTime updatedTime; //该会话状态最后一次更新的时间
 
-  Chat(
-      {required this.chatId,
-      required this.targetId,
-      this.isWithOtherUser = false,
-      this.isWithGroup = false,
-      this.isWithSystem = false,
-      this.isStickyOnTop = false,
-      this.isDeleted = false,
-      required this.numberOfUnreadMessages,
-      this.lastMessageId,
-      this.isRead = false,
-      required this.updatedTime});
+  Chat({
+    required this.id,
+    required this.uuid,
+    required this.targetId,
+    this.isWithOtherUser = false,
+    this.isWithGroup = false,
+    this.isWithSystem = false,
+    this.isStickyOnTop = false,
+    this.isDeleted = false,
+    required this.numberOfUnreadMessages,
+    this.lastMessageId,
+    required this.updatedTime,
+  });
 
   Chat.fromJson(Map<String, dynamic> map) {
-    chatId = map['chatId'];
+    id = map['id'];
+    uuid = map['uuid'];
     targetId = map['targetId'];
     isWithOtherUser = map['isWithOtherUser'];
     isWithGroup = map['isWithGroup'];
@@ -36,13 +38,13 @@ class Chat {
     isDeleted = map['isDeleted'];
     numberOfUnreadMessages = map['numberOfUnreadMessages'];
     lastMessageId = map['lastMessageId'];
-    isRead = map['isRead'];
     updatedTime = DateTime.parse(map['updatedTime']);
   }
 
   Map<String, dynamic> toSql() {
     return {
-      'chatId': chatId,
+      'id': id,
+      'uuid': uuid,
       'targetId': targetId,
       'isWithOtherUser': isWithOtherUser ? 1 : 0,
       'isWithGroup': isWithGroup ? 1 : 0,
@@ -51,7 +53,6 @@ class Chat {
       'isDeleted': isDeleted ? 1 : 0,
       'numberOfUnreadMessages': numberOfUnreadMessages,
       'lastMessageId': lastMessageId,
-      'isRead': isRead ? 1 : 0,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
   }
@@ -66,13 +67,13 @@ class Chat {
       'isDeleted': isDeleted ? 1 : 0,
       'numberOfUnreadMessages': numberOfUnreadMessages,
       'lastMessageId': lastMessageId,
-      'isRead': isRead ? 1 : 0,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
   }
 
   Chat.fromSql(Map<String, dynamic> map) {
-    chatId = map['chatId'];
+    id = map['id'];
+    uuid = map['uuid'];
     targetId = map['targetId'];
     isWithOtherUser = map['isWithOtherUser'] > 0;
     isWithGroup = map['isWithGroup'] > 0;
@@ -81,7 +82,6 @@ class Chat {
     isDeleted = map['isDeleted'] > 0;
     numberOfUnreadMessages = map['numberOfUnreadMessages'];
     lastMessageId = map['lastMessageId'];
-    isRead = map['isRead'] > 0;
     updatedTime = DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
   }
 }
@@ -96,13 +96,13 @@ class ChatProvider {
     return true;
   }
 
-  Future<bool> update(Map<String, dynamic> values, int chatId) async {
-    await database.update('chat', values, where: "chatId=?", whereArgs: [chatId]);
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await database.update('chat', values, where: "id=?", whereArgs: [id]);
     return true;
   }
 
-  Future<Chat?> get(int chatId) async {
-    List<Map<String, dynamic>> maps = await database.query('chat', where: "chatId=?", whereArgs: [chatId]);
+  Future<Chat?> get(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('chat', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Chat.fromSql(maps.first);
     }
@@ -120,8 +120,8 @@ class ChatProvider {
     return chats;
   }
 
-  Future<Chat?> getNotDeleted(int chatId) async {
-    List<Map<String, dynamic>> maps = await database.query('chat', where: "chatId=? & isDeleted=0", whereArgs: [chatId]);
+  Future<Chat?> getNotDeleted(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('chat', where: "id=? & isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Chat.fromSql(maps.first);
     }
@@ -140,7 +140,7 @@ class ChatProvider {
   }
 }
 
-class ChatProviderWithTransaction{
+class ChatProviderWithTransaction {
   late Transaction transaction;
 
   ChatProviderWithTransaction(this.transaction);
@@ -150,13 +150,13 @@ class ChatProviderWithTransaction{
     return true;
   }
 
-  Future<bool> update(Map<String, dynamic> values, int chatId) async {
-    await transaction.update('chat', values, where: "chatId=?", whereArgs: [chatId]);
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await transaction.update('chat', values, where: "id=?", whereArgs: [id]);
     return true;
   }
 
-  Future<Chat?> get(int chatId) async {
-    List<Map<String, dynamic>> maps = await transaction.query('chat', where: "chatId=?", whereArgs: [chatId]);
+  Future<Chat?> get(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('chat', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Chat.fromSql(maps.first);
     }

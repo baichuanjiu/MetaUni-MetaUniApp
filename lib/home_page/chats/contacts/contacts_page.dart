@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../database/database_manager.dart';
 import '../../../database/models/user/brief_user_information.dart';
-import '../../../database/models/user/user_synchronization_table.dart';
+import '../../../database/models/user/user_sync_table.dart';
 import '../../../models/dio_model.dart';
 import '../../../reusable_components/logout/logout.dart';
 import '../../../reusable_components/snack_bar/network_error_snack_bar.dart';
@@ -33,20 +33,20 @@ class _ContactsPageState extends State<ContactsPage>{
     ),
   ];
 
-  performSynchronizationActions() async {
+  performSyncActions() async {
     Database database = await DatabaseManager().getDatabase;
-    UserSynchronizationTableProvider userSynchronizationTableProvider = UserSynchronizationTableProvider(database);
+    UserSyncTableProvider userSyncTableProvider = UserSyncTableProvider(database);
     final prefs = await SharedPreferences.getInstance();
 
     final int? uuid = prefs.getInt('uuid');
-    UserSynchronizationTable? userSynchronizationTable = await userSynchronizationTableProvider.get(uuid!);
+    UserSyncTable? userSyncTable = await userSyncTableProvider.get(uuid!);
 
-    await synchronizeFriendsInformation(userSynchronizationTable!.updatedTimeForFriendsBriefInformation);
+    await syncFriendsInformation(userSyncTable!.updatedTimeForFriendsBriefInformation);
   }
 
   final DioModel dioModel = DioModel();
 
-  synchronizeFriendsInformation(DateTime updatedTimeForFriendsBriefInformation) async {
+  syncFriendsInformation(DateTime updatedTimeForFriendsBriefInformation) async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -55,7 +55,7 @@ class _ContactsPageState extends State<ContactsPage>{
     try {
       Response response;
       response = await dioModel.dio.get(
-        '/user/synchronization/friendsInformation',
+        '/metaUni/userAPI/friendship/friendsInformation/sync',
         queryParameters: {
           'updatedTime': updatedTimeForFriendsBriefInformation,
         },
@@ -67,13 +67,6 @@ class _ContactsPageState extends State<ContactsPage>{
       switch (response.data['code']) {
         case 1:
         //Message:"使用了无效的JWT，请重新登录"
-          if (mounted) {
-            getNormalSnackBar(context, response.data['message']);
-            logout(context);
-          }
-          break;
-        case 2:
-        //Message:"该用户不存在"
           if (mounted) {
             getNormalSnackBar(context, response.data['message']);
             logout(context);
@@ -97,8 +90,8 @@ class _ContactsPageState extends State<ContactsPage>{
               }
             }
 
-            UserSynchronizationTableProviderWithTransaction userSynchronizationTableProviderWithTransaction = UserSynchronizationTableProviderWithTransaction(transaction);
-            userSynchronizationTableProviderWithTransaction.update({
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            userSyncTableProviderWithTransaction.update({
               'updatedTimeForFriendsBriefInformation': updatedTime.toString(),
             }, uuid!);
           });
@@ -114,7 +107,7 @@ class _ContactsPageState extends State<ContactsPage>{
   void initState() {
     super.initState();
 
-    performSynchronizationActions();
+    performSyncActions();
   }
 
   @override

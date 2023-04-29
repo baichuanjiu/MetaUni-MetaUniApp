@@ -14,9 +14,10 @@ class WebSocketChannel {
 
   initChannel(int uuid, String jwt) {
     _channel = IOWebSocketChannel.connect(
-      Uri.parse('ws://10.0.2.2:45555/ws'),
+      Uri.parse('ws://10.0.2.2:45550/metaUni/webSocketAPI/ws'),
       headers: {'UUID': uuid, 'JWT': jwt},
     );
+    _channel!.sink.add("test");
     _channel!.stream.listen((event) {
       print("收到：$event");
     },onDone: (){

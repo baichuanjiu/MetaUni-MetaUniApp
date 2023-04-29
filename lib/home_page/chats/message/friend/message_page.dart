@@ -178,8 +178,9 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       if (chat == null) {
         chatProviderWithTransaction.insert(
           Chat(
-            chatId: chatId,
-            targetId: targetUser.uuid,
+            id: chatId,
+            uuid: uuid,
+            targetId: targetUser.id,
             isWithOtherUser: true,
             numberOfUnreadMessages: 0,
             lastMessageId: message.messageId,
@@ -190,7 +191,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
           'lastMessageId': message.messageId,
-          'isRead': 0,
           'updatedTime': message.createdTime.millisecondsSinceEpoch,
         }, chatId);
       }
@@ -225,7 +225,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
     targetUser = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
-    targetUserInformation = (await briefUserInformationProvider.get(targetUser.uuid))!;
+    targetUserInformation = (await briefUserInformationProvider.get(targetUser.id))!;
   }
 
   @override
@@ -352,7 +352,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                       }),
                 ),
                 MessageInputField(
-                  receiverId: targetUser.uuid,
+                  receiverId: targetUser.id,
                   removeContextMenu: bubbleHelper.removeContextMenu,
                   sendMessage: sendMessage,
                 ),

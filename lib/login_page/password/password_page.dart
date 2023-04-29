@@ -9,7 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:fast_rsa/fast_rsa.dart';
 import '../../database/database_manager.dart';
 import '../../database/models/user/brief_user_information.dart';
-import '../../database/models/user/user_synchronization_table.dart';
+import '../../database/models/user/user_sync_table.dart';
 import '../../models/dio_model.dart';
 import '../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../models/brief_private_profile.dart';
@@ -205,10 +205,10 @@ class _PasswordInputField extends State<PasswordInputField> {
               );
             }
 
-            UserSynchronizationTableProviderWithTransaction userSynchronizationTableProviderWithTransaction = UserSynchronizationTableProviderWithTransaction(transaction);
-            if (await userSynchronizationTableProviderWithTransaction.get(response.data['data']['uuid']) == null) {
-              userSynchronizationTableProviderWithTransaction.insert(
-                UserSynchronizationTable.init(response.data['data']['uuid']),
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            if (await userSyncTableProviderWithTransaction.get(response.data['data']['uuid']) == null) {
+              userSyncTableProviderWithTransaction.insert(
+                UserSyncTable.init(response.data['data']['uuid']),
               );
             }
           });

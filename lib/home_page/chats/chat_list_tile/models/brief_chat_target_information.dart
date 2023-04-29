@@ -1,15 +1,15 @@
 class BriefChatTargetInformation{
   late String targetType;
-  late int uuid;
+  late int id;
   late String avatar;
   late String name;
   late DateTime updatedTime;
 
-  BriefChatTargetInformation({required this.targetType,required this.uuid,required this.avatar,required this.name,required this.updatedTime});
+  BriefChatTargetInformation({required this.targetType,required this.id,required this.avatar,required this.name,required this.updatedTime});
 
   BriefChatTargetInformation.fromJson(Map<String, dynamic> map) {
     targetType = map['targetType'];
-    uuid = map['uuid'];
+    id = map['id'];
     avatar = map['avatar'];
     name = map['name'];
     updatedTime = DateTime.parse(map['updatedTime']);

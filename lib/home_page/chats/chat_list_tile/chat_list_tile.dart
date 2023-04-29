@@ -1,8 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-
 import 'models/brief_chat_target_information.dart';
 import 'models/chat_list_tile_data.dart';
 
@@ -55,7 +53,7 @@ class _ChatListTileState extends State<ChatListTile> with TickerProviderStateMix
 
   late BriefChatTargetInformation chatTarget = BriefChatTargetInformation(
     targetType: widget.chatListTileData.briefChatTargetInformation.targetType,
-    uuid:widget.chatListTileData.briefChatTargetInformation.uuid,
+    id:widget.chatListTileData.briefChatTargetInformation.id,
     avatar: widget.chatListTileData.briefChatTargetInformation.avatar,
     name: widget.chatListTileData.briefChatTargetInformation.name,
     updatedTime: widget.chatListTileData.briefChatTargetInformation.updatedTime,

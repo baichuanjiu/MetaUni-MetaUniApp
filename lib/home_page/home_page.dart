@@ -1,17 +1,13 @@
-
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
-
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
-import '../database/models/friend/friend_ship.dart';
 import '../database/models/friend/friends_group.dart';
+import '../database/models/friend/friendship.dart';
 import '../database/models/user/brief_user_information.dart';
-import '../database/models/user/user_synchronization_table.dart';
+import '../database/models/user/user_sync_table.dart';
 import '../models/dio_model.dart';
 import '../reusable_components/logout/logout.dart';
 import '../reusable_components/snack_bar/network_error_snack_bar.dart';
@@ -47,22 +43,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  performSynchronizationActions() async {
+  performSyncActions() async {
     Database database = await DatabaseManager().getDatabase;
-    UserSynchronizationTableProvider userSynchronizationTableProvider = UserSynchronizationTableProvider(database);
+    UserSyncTableProvider userSyncTableProvider = UserSyncTableProvider(database);
     final prefs = await SharedPreferences.getInstance();
 
     final int? uuid = prefs.getInt('uuid');
-    UserSynchronizationTable? userSynchronizationTable = await userSynchronizationTableProvider.get(uuid!);
+    UserSyncTable? userSyncTable = await userSyncTableProvider.get(uuid!);
 
-    await synchronizeFriendsGroups(userSynchronizationTable!.updatedTimeForFriendsGroups);
-    await synchronizeFriendShips(userSynchronizationTable.updatedTimeForFriendShips);
-    await synchronizeChats(userSynchronizationTable.updatedTimeForChats);
+    await syncFriendsGroups(userSyncTable!.updatedTimeForFriendsGroups);
+    await syncFriendships(userSyncTable.updatedTimeForFriendships);
+    await syncChats(userSyncTable.updatedTimeForChats);
   }
 
   final DioModel dioModel = DioModel();
 
-  synchronizeFriendsGroups(DateTime updatedTimeForFriendsGroups) async {
+  syncFriendsGroups(DateTime updatedTimeForFriendsGroups) async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -71,7 +67,7 @@ class _HomePageState extends State<HomePage> {
     try {
       Response response;
       response = await dioModel.dio.get(
-        '/user/synchronization/friendsGroups',
+        '/metaUni/userAPI/friendGroup/sync',
         queryParameters: {
           'updatedTime': updatedTimeForFriendsGroups,
         },
@@ -88,13 +84,6 @@ class _HomePageState extends State<HomePage> {
             logout(context);
           }
           break;
-        case 2:
-          //Message:"该用户不存在"
-          if (mounted) {
-            getNormalSnackBar(context, response.data['message']);
-            logout(context);
-          }
-          break;
         default:
           List<dynamic> dataList = response.data['data']['dataList'];
           DateTime updatedTime = DateTime.parse(response.data['data']['updatedTime']);
@@ -105,15 +94,15 @@ class _HomePageState extends State<HomePage> {
 
             for (var data in dataList) {
               FriendsGroup friendsGroup = FriendsGroup.fromJson(data);
-              if (await friendsGroupProviderWithTransaction.get(friendsGroup.friendsGroupId) == null) {
+              if (await friendsGroupProviderWithTransaction.get(friendsGroup.id) == null) {
                 friendsGroupProviderWithTransaction.insert(friendsGroup);
               } else {
-                friendsGroupProviderWithTransaction.update(friendsGroup.toUpdateSql(), friendsGroup.friendsGroupId);
+                friendsGroupProviderWithTransaction.update(friendsGroup.toUpdateSql(), friendsGroup.id);
               }
             }
 
-            UserSynchronizationTableProviderWithTransaction userSynchronizationTableProviderWithTransaction = UserSynchronizationTableProviderWithTransaction(transaction);
-            userSynchronizationTableProviderWithTransaction.update({
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            userSyncTableProviderWithTransaction.update({
               'updatedTimeForFriendsGroups': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
@@ -125,7 +114,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  synchronizeFriendShips(DateTime updatedTimeForFriendShips) async {
+  syncFriendships(DateTime updatedTimeForFriendships) async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -134,9 +123,9 @@ class _HomePageState extends State<HomePage> {
     try {
       Response response;
       response = await dioModel.dio.get(
-        '/user/synchronization/friendShips',
+        '/metaUni/userAPI/friendship/sync',
         queryParameters: {
-          'updatedTime': updatedTimeForFriendShips,
+          'updatedTime': updatedTimeForFriendships,
         },
         options: Options(headers: {
           'JWT': jwt,
@@ -151,28 +140,21 @@ class _HomePageState extends State<HomePage> {
             logout(context);
           }
           break;
-        case 2:
-          //Message:"该用户不存在"
-          if (mounted) {
-            getNormalSnackBar(context, response.data['message']);
-            logout(context);
-          }
-          break;
         default:
-          List<dynamic> friendShipsList = response.data['data']['friendShipsList'];
+          List<dynamic> friendshipsList = response.data['data']['friendshipsList'];
           List<dynamic> briefUserInformationList = response.data['data']['briefUserInformationList'];
           DateTime updatedTime = DateTime.parse(response.data['data']['updatedTime']);
           Database database = await DatabaseManager().getDatabase;
 
           await database.transaction((transaction) async {
-            FriendShipProviderWithTransaction friendShipProviderWithTransaction = FriendShipProviderWithTransaction(transaction);
+            FriendshipProviderWithTransaction friendshipProviderWithTransaction = FriendshipProviderWithTransaction(transaction);
 
-            for (var data in friendShipsList) {
-              FriendShip friendShip = FriendShip.fromJson(data);
-              if (await friendShipProviderWithTransaction.get(friendShip.friendShipId) == null) {
-                friendShipProviderWithTransaction.insert(friendShip);
+            for (var data in friendshipsList) {
+              Friendship friendship = Friendship.fromJson(data);
+              if (await friendshipProviderWithTransaction.get(friendship.id) == null) {
+                friendshipProviderWithTransaction.insert(friendship);
               } else {
-                friendShipProviderWithTransaction.update(friendShip.toUpdateSql(), friendShip.friendShipId);
+                friendshipProviderWithTransaction.update(friendship.toUpdateSql(), friendship.id);
               }
             }
 
@@ -187,9 +169,9 @@ class _HomePageState extends State<HomePage> {
               }
             }
 
-            UserSynchronizationTableProviderWithTransaction userSynchronizationTableProviderWithTransaction = UserSynchronizationTableProviderWithTransaction(transaction);
-            userSynchronizationTableProviderWithTransaction.update({
-              'updatedTimeForFriendShips': updatedTime.millisecondsSinceEpoch,
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            userSyncTableProviderWithTransaction.update({
+              'updatedTimeForFriendships': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
       }
@@ -200,7 +182,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  synchronizeChats(DateTime updatedTimeForChats) async {
+  syncChats(DateTime updatedTimeForChats) async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -209,7 +191,7 @@ class _HomePageState extends State<HomePage> {
     try {
       Response response;
       response = await dioModel.dio.get(
-        '/user/synchronization/chats',
+        '/metaUni/messageAPI/chat/sync',
         queryParameters: {
           'updatedTime': updatedTimeForChats,
         },
@@ -226,13 +208,6 @@ class _HomePageState extends State<HomePage> {
             logout(context);
           }
           break;
-        case 2:
-          //Message:"该用户不存在"
-          if (mounted) {
-            getNormalSnackBar(context, response.data['message']);
-            logout(context);
-          }
-          break;
         default:
           List<dynamic> chatsList = response.data['data']['chatsList'];
           List<dynamic> briefChatTargetInformationList = response.data['data']['briefChatTargetInformationList'];
@@ -244,10 +219,10 @@ class _HomePageState extends State<HomePage> {
 
             for (var data in chatsList) {
               Chat chat = Chat.fromJson(data);
-              if (await chatProviderWithTransaction.get(chat.chatId) == null) {
+              if (await chatProviderWithTransaction.get(chat.id) == null) {
                 chatProviderWithTransaction.insert(chat);
               } else {
-                chatProviderWithTransaction.update(chat.toUpdateSql(), chat.chatId);
+                chatProviderWithTransaction.update(chat.toUpdateSql(), chat.id);
               }
             }
 
@@ -259,7 +234,7 @@ class _HomePageState extends State<HomePage> {
               //后续还会在这里添加group与system
               if (briefChatTargetInformation.targetType == 'user') {
                 BriefUserInformation info = BriefUserInformation(
-                    uuid: briefChatTargetInformation.uuid, avatar: briefChatTargetInformation.avatar, nickname: briefChatTargetInformation.name, updatedTime: briefChatTargetInformation.updatedTime);
+                    uuid: briefChatTargetInformation.id, avatar: briefChatTargetInformation.avatar, nickname: briefChatTargetInformation.name, updatedTime: briefChatTargetInformation.updatedTime);
                 if (await briefUserInformationProviderWithTransaction.get(info.uuid) == null) {
                   briefUserInformationProviderWithTransaction.insert(info);
                 } else {
@@ -268,8 +243,8 @@ class _HomePageState extends State<HomePage> {
               }
             }
 
-            UserSynchronizationTableProviderWithTransaction userSynchronizationTableProviderWithTransaction = UserSynchronizationTableProviderWithTransaction(transaction);
-            userSynchronizationTableProviderWithTransaction.update({
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            userSyncTableProviderWithTransaction.update({
               'updatedTimeForChats': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
@@ -297,7 +272,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     initDatabase();
-    performSynchronizationActions();
+    performSyncActions();
     initWebSocket();
   }
 
