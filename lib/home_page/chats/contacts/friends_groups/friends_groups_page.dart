@@ -34,11 +34,7 @@ class _FriendsGroupsPageState extends State<FriendsGroupsPage> {
 
     for (var friendsGroup in friendsGroups) {
       FriendshipProvider friendShipProvider = FriendshipProvider(database);
-      List<dynamic> tempList = await friendShipProvider.getInGroup(friendsGroup.id);
-      List<int> friends = [];
-      for (int data in tempList) {
-        friends.add(data);
-      }
+      List<Friendship> friends = await friendShipProvider.getFriendsInGroup(friendsGroup.id);
       friendsGroupsData.add(
         FriendsGroupData(
           friendsGroup.friendsGroupName,
@@ -48,23 +44,19 @@ class _FriendsGroupsPageState extends State<FriendsGroupsPage> {
     }
   }
 
-  Future<Column> initFriendsInGroup(List<int> friends) async {
+  Future<Column> initFriendsInGroup(List<Friendship> friends) async {
     Database database = await DatabaseManager().getDatabase;
-    FriendshipProvider friendShipProvider = FriendshipProvider(database);
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
 
     List<FriendListTile> tiles = [];
-    for (int friend in friends) {
-      Friendship? ship = await friendShipProvider.getNotDeleted(friend);
-      if (ship != null) {
-        BriefUserInformation? info = await briefUserInformationProvider.get(ship.friendId);
-        if (info != null) {
-          tiles.add(
-            FriendListTile(
-              FriendListTileData(ship.friendId, info.avatar, ship.remark ?? info.nickname),
-            ),
-          );
-        }
+    for (Friendship friend in friends) {
+      BriefUserInformation? info = await briefUserInformationProvider.get(friend.friendId);
+      if (info != null) {
+        tiles.add(
+          FriendListTile(
+            FriendListTileData(friend.friendId, info.avatar, friend.remark ?? info.nickname),
+          ),
+        );
       }
     }
 

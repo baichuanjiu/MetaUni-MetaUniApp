@@ -138,15 +138,15 @@ class FriendshipProvider {
     return friendships;
   }
 
-  Future<List<int>> getInGroup(int friendsGroupId) async {
-    List<int> friendshipId = [];
-    List<Map<String, dynamic>> maps = await database.query('friendship', where: "friendsGroupId=?", whereArgs: [friendsGroupId]);
+  Future<List<Friendship>> getFriendsInGroup(int friendsGroupId) async {
+    List<Friendship> friends = [];
+    List<Map<String, dynamic>> maps = await database.query('friendship', where: "friendsGroupId=? & isDeleted=0", whereArgs: [friendsGroupId]);
     if (maps.isNotEmpty) {
       for (var element in maps) {
-        friendshipId.add(element['id']);
+        friends.add(Friendship.fromSql(element));
       }
     }
-    return friendshipId;
+    return friends;
   }
 }
 

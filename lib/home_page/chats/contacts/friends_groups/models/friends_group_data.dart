@@ -1,6 +1,8 @@
+import '../../../../../database/models/friend/friendship.dart';
+
 class FriendsGroupData{
   String name;
-  List<int> friends;
+  List<Friendship> friends;
 
   FriendsGroupData(this.name, this.friends,);
 }
