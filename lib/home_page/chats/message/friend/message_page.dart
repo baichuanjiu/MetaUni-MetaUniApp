@@ -76,7 +76,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   //后面改成从数据库读取
   late List<CommonMessage> historyMessages = [
     CommonMessage(
-      messageId: 1,
+      id: 1,
       chatId: 1,
       senderId: 10000001,
       receiverId: 10000000,
@@ -93,7 +93,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       messageText: "测试一下，一下一下一下，一下一下一下又一下",
     ),
     CommonMessage(
-      messageId: 2,
+      id: 2,
       chatId: 1,
       senderId: 10000000,
       receiverId: 10000001,
@@ -183,14 +183,14 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             targetId: targetUser.id,
             isWithOtherUser: true,
             numberOfUnreadMessages: 0,
-            lastMessageId: message.messageId,
+            lastMessageId: message.id,
             updatedTime: message.createdTime,
           ),
         );
       } else {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
-          'lastMessageId': message.messageId,
+          'lastMessageId': message.id,
           'updatedTime': message.createdTime.millisecondsSinceEpoch,
         }, chatId);
       }

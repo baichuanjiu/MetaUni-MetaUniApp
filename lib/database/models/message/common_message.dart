@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 class CommonMessage {
-  late int messageId; //消息ID，一条消息记录的唯一标识
+  late int id; //消息ID，一条消息记录的唯一标识
   late int chatId; //会话ID，标识这条消息属于哪个会话
   late int senderId; //消息发送者的ID
   late int receiverId; //消息接收者的ID
@@ -12,6 +12,7 @@ class CommonMessage {
   late bool isReply; //是否是某条消息的回复
   late bool isImageMessage; //是否是带有图片的消息
   late bool isVoiceMessage; //是否是语音消息
+  late bool isRead; //是否已读
   late String? customType; //特殊消息类型
   late String? minimumSupportVersion; //特殊消息最低支持的应用版本
   late String? textOnError; //特殊消息不支持时，显示的文字
@@ -22,30 +23,32 @@ class CommonMessage {
   late String? messageVoice; //语音消息资源存储地址
   late int sequence; //该CommonMessage对于消息所有者来说的Sequence，用于消息对齐
 
-  CommonMessage(
-      {required this.messageId,
-      required this.chatId,
-      required this.senderId,
-      required this.receiverId,
-      required this.createdTime,
-      this.isCustom = false,
-      this.isRecalled = false,
-      this.isDeleted = false,
-      this.isReply = false,
-      this.isImageMessage = false,
-      this.isVoiceMessage = false,
-      this.customType,
-      this.minimumSupportVersion,
-      this.textOnError,
-      this.customMessageContent,
-      this.messageReplied,
-      this.messageText,
-      this.messageImage,
-      this.messageVoice,
-      required this.sequence});
+  CommonMessage({
+    required this.id,
+    required this.chatId,
+    required this.senderId,
+    required this.receiverId,
+    required this.createdTime,
+    this.isCustom = false,
+    this.isRecalled = false,
+    this.isDeleted = false,
+    this.isReply = false,
+    this.isImageMessage = false,
+    this.isVoiceMessage = false,
+    this.isRead = false,
+    this.customType,
+    this.minimumSupportVersion,
+    this.textOnError,
+    this.customMessageContent,
+    this.messageReplied,
+    this.messageText,
+    this.messageImage,
+    this.messageVoice,
+    required this.sequence,
+  });
 
   CommonMessage.fromJson(Map<String, dynamic> map) {
-    messageId = map['messageId'];
+    id = map['id'];
     chatId = map['chatId'];
     senderId = map['senderId'];
     receiverId = map['receiverId'];
@@ -56,6 +59,7 @@ class CommonMessage {
     isReply = map['isReply'];
     isImageMessage = map['isImageMessage'];
     isVoiceMessage = map['isVoiceMessage'];
+    isRead = map['isRead'];
     customType = map['customType'];
     minimumSupportVersion = map['minimumSupportVersion'];
     textOnError = map['textOnError'];
@@ -69,7 +73,7 @@ class CommonMessage {
 
   Map<String, dynamic> toSql() {
     return {
-      'messageId': messageId,
+      'id': id,
       'chatId': chatId,
       'senderId': senderId,
       'receiverId': receiverId,
@@ -80,6 +84,7 @@ class CommonMessage {
       'isReply': isReply ? 1 : 0,
       'isImageMessage': isImageMessage ? 1 : 0,
       'isVoiceMessage': isVoiceMessage ? 1 : 0,
+      'isRead': isRead ? 1 : 0,
       'customType': customType,
       'minimumSupportVersion': minimumSupportVersion,
       'textOnError': textOnError,
@@ -93,7 +98,7 @@ class CommonMessage {
   }
 
   CommonMessage.fromSql(Map<String, dynamic> map) {
-    messageId = map['messageId'];
+    id = map['id'];
     chatId = map['chatId'];
     senderId = map['senderId'];
     receiverId = map['receiverId'];
@@ -104,6 +109,7 @@ class CommonMessage {
     isReply = map['isReply'] > 0;
     isImageMessage = map['isImageMessage'] > 0;
     isVoiceMessage = map['isVoiceMessage'] > 0;
+    isRead = map['isRead'] > 0;
     customType = map['customType'];
     minimumSupportVersion = map['minimumSupportVersion'];
     textOnError = map['textOnError'];
@@ -116,13 +122,13 @@ class CommonMessage {
   }
 }
 
-class CommonMessageProvider{
+class CommonMessageProvider {
   late Database database;
 
   CommonMessageProvider(this.database);
 
-  Future<CommonMessage?> get(int messageId) async {
-    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "messageId=?", whereArgs: [messageId]);
+  Future<CommonMessage?> get(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return CommonMessage.fromSql(maps.first);
     }
@@ -131,7 +137,7 @@ class CommonMessageProvider{
 
   Future<List<CommonMessage>> getAllNotDeletedInChat(int chatId) async {
     List<CommonMessage> messages = [];
-    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "isDeleted=0 & chatId=?",whereArgs: [chatId]);
+    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "isDeleted=0 & chatId=?", whereArgs: [chatId]);
     if (maps.isNotEmpty) {
       for (var element in maps) {
         messages.add(CommonMessage.fromSql(element));
@@ -141,7 +147,7 @@ class CommonMessageProvider{
   }
 }
 
-class CommonMessageProviderWithTransaction{
+class CommonMessageProviderWithTransaction {
   late Transaction transaction;
 
   CommonMessageProviderWithTransaction(this.transaction);
@@ -151,17 +157,16 @@ class CommonMessageProviderWithTransaction{
     return true;
   }
 
-  Future<bool> update(Map<String, dynamic> values, int messageId) async {
-    await transaction.update('commonMessage', values, where: "messageId=?", whereArgs: [messageId]);
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await transaction.update('commonMessage', values, where: "id=?", whereArgs: [id]);
     return true;
   }
 
-  Future<CommonMessage?> get(int messageId) async {
-    List<Map<String, dynamic>> maps = await transaction.query('commonMessage', where: "messageId=?", whereArgs: [messageId]);
+  Future<CommonMessage?> get(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('commonMessage', where: "id=?", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return CommonMessage.fromSql(maps.first);
     }
     return null;
   }
 }
-

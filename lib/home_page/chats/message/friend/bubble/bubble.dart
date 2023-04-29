@@ -192,7 +192,7 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
     Widget getRepliedMessageContent(int messageReplied) {
       //后续改成从数据库获取
       final CommonMessage repliedMessage = CommonMessage(
-          messageId: 2,
+          id: 2,
           chatId: 1,
           senderId: 10000000,
           receiverId: 1,
