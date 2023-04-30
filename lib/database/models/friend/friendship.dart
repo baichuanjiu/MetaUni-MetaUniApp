@@ -97,11 +97,11 @@ class FriendshipProvider {
     return null;
   }
 
-  Future<String?> getRemark(int friendId)async{
-    List<Map<String, dynamic>> maps = await database.query('friendship',columns: ['remark'], where: "friendId=?", whereArgs: [friendId]);
+  Future<String?> getRemark(int friendId) async {
+    List<Map<String, dynamic>> maps = await database.query('friendship', columns: ['remark'], where: "friendId=?", whereArgs: [friendId]);
     if (maps.isNotEmpty) {
-      String remark = maps.first['remark'];
-      if(remark.isNotEmpty){
+      String? remark = maps.first['remark'];
+      if (remark != null) {
         return remark;
       }
     }
