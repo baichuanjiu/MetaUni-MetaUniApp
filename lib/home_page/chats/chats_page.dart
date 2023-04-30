@@ -64,7 +64,7 @@ class _ChatsPageState extends State<ChatsPage> {
               chat: chat,
               messagePreview: messagePreview,
               lastMessageCreatedTime: lastMessageCreatedTime,
-              briefChatTargetInformation: BriefChatTargetInformation(targetType: "user", id: chat.targetId, avatar: info.avatar, name: remark ?? info.nickname, updatedTime: info.updatedTime),
+              briefChatTargetInformation: BriefChatTargetInformation(chatId: chat.id,targetType: "user", id: chat.targetId, avatar: info.avatar, name: remark ?? info.nickname, updatedTime: info.updatedTime),
             ),
           );
         }

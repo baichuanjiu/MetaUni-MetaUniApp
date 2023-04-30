@@ -3,7 +3,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../database/database_manager.dart';
@@ -14,6 +16,7 @@ import '../../../../models/dio_model.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
+import '../../../../web_socket/web_socket_helper.dart';
 import '../../chat_list_tile/models/brief_chat_target_information.dart';
 import 'bubble/bubble.dart';
 import 'bubble/bubble_helper.dart';
@@ -49,7 +52,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
     database = await DatabaseManager().getDatabase;
 
-    BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
+    BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
     me = (await briefUserInformationProvider.get(uuid))!;
   }
 
@@ -69,45 +72,11 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     ContextMenuController.removeAny();
   }
 
-  late BriefChatTargetInformation targetUser;
+  late BriefChatTargetInformation chatTargetInformation;
   late BriefUserInformation targetUserInformation;
 
   //后面改成从数据库读取
-  late List<CommonMessage> historyMessages = [
-    CommonMessage(
-      id: 1,
-      chatId: 1,
-      senderId: 10000001,
-      receiverId: 10000000,
-      createdTime: DateTime.now().subtract(
-        const Duration(minutes: 10),
-      ),
-
-      //isRecalled: true,
-
-      isReply: true,
-      messageReplied: 1,
-
-      sequence: 1,
-      messageText: "测试一下，一下一下一下，一下一下一下又一下",
-    ),
-    CommonMessage(
-      id: 2,
-      chatId: 1,
-      senderId: 10000000,
-      receiverId: 10000001,
-      createdTime: DateTime.now(),
-
-      //isDeleted: true,
-      //isRecalled: true,
-
-      sequence: 2,
-      messageText: "测试测试测试",
-      isImageMessage: true,
-      messageImage: '["http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg"]',
-      //messageImage: '["http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg","http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg"]',
-    ),
-  ].reversed.toList();
+  late List<CommonMessage> historyMessages = [];
 
   late List<CommonMessage> newMessages = [];
 
@@ -116,7 +85,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       try {
         Response response;
         response = await dioModel.dio.post(
-          '/commonMessage/text',
+          '/metaUni/messageAPI/commonMessage/text',
           data: {
             "receiverId": sendData.receiverId,
             "messageText": sendData.messageText,
@@ -179,7 +148,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
           Chat(
             id: chatId,
             uuid: uuid,
-            targetId: targetUser.id,
+            targetId: chatTargetInformation.id,
             isWithOtherUser: true,
             numberOfUnreadMessages: 0,
             lastMessageId: message.id,
@@ -219,12 +188,19 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   }
 
   @override
-  void didChangeDependencies() async{
+  void didChangeDependencies() async {
     super.didChangeDependencies();
 
-    targetUser = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
+    chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
-    targetUserInformation = (await briefUserInformationProvider.get(targetUser.id))!;
+    targetUserInformation = (await briefUserInformationProvider.get(chatTargetInformation.id))!;
+
+    //后续要修改 比如每次只获取X条，而并不是一次性全获取
+    CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
+    historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
+    setState(() {
+
+    });
   }
 
   @override
@@ -237,129 +213,143 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        bubbleHelper.removeContextMenu();
-        Navigator.of(context).pop();
-        return true;
-      },
-      child: GestureDetector(
-        onLongPressDown: (details) {
-          if (editableTextState == null) {
-            ContextMenuController.removeAny();
-          }
-        },
-        onTap: () {
-          bubbleHelper.removeContextMenu();
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(targetUser.name),
-            leading: IconButton(
-              onPressed: () {
-                Navigator.pop(context);
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CommonMessageCubit>.value(value: WebSocketHelper().commonMessageCubit),
+      ],
+      child: MultiBlocListener(
+          listeners: [
+            BlocListener<CommonMessageCubit, CommonMessage?>(
+              listener: (context, commonMessage) {
+                //后续还要修改，首先得判断是不是此Chat下的消息
+                receiveNewMessage(commonMessage!);
               },
-              icon: const Icon(Icons.arrow_back_ios_new_outlined),
             ),
-            actions: [
-              IconButton(
-                onPressed: () {
-                  bubbleHelper.removeContextMenu();
-                },
-                icon: const Icon(Icons.menu_outlined),
+          ],
+          child: WillPopScope(
+            onWillPop: () async {
+              bubbleHelper.removeContextMenu();
+              Navigator.of(context).pop();
+              return true;
+            },
+            child: GestureDetector(
+              onLongPressDown: (details) {
+                if (editableTextState == null) {
+                  ContextMenuController.removeAny();
+                }
+              },
+              onTap: () {
+                bubbleHelper.removeContextMenu();
+              },
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(chatTargetInformation.name),
+                  leading: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.arrow_back_ios_new_outlined),
+                  ),
+                  actions: [
+                    IconButton(
+                      onPressed: () {
+                        bubbleHelper.removeContextMenu();
+                      },
+                      icon: const Icon(Icons.menu_outlined),
+                    ),
+                  ],
+                ),
+                body: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: FutureBuilder(
+                            //后续可能要修改
+                            future: init,
+                            builder: (context, snapshot) {
+                              switch (snapshot.connectionState) {
+                                case ConnectionState.none:
+                                  return const CupertinoActivityIndicator();
+                                case ConnectionState.active:
+                                  return const CupertinoActivityIndicator();
+                                case ConnectionState.waiting:
+                                  return const CupertinoActivityIndicator();
+                                case ConnectionState.done:
+                                  if (snapshot.hasError) {
+                                    return const CupertinoActivityIndicator();
+                                  }
+                                  return CustomScrollView(
+                                    controller: _scrollController,
+                                    reverse: true,
+                                    center: centerKey,
+                                    physics: const AlwaysScrollableScrollPhysics(
+                                      parent: BouncingScrollPhysics(),
+                                    ),
+                                    slivers: [
+                                      // SliverToBoxAdapter(
+                                      //   child: Text("新发送的消息"),
+                                      // ),
+                                      SliverList(
+                                        delegate: SliverChildBuilderDelegate(
+                                          (context, index) {
+                                            bool isSentByMe;
+                                            if (newMessages[index].senderId == uuid) {
+                                              isSentByMe = true;
+                                            } else {
+                                              isSentByMe = false;
+                                            }
+                                            return CommonMessageBubble(
+                                              isSentByMe: isSentByMe,
+                                              bubbleHelper: bubbleHelper,
+                                              sender: isSentByMe ? me : targetUserInformation,
+                                              message: newMessages[index],
+                                            );
+                                          },
+                                          childCount: newMessages.length,
+                                        ),
+                                      ),
+                                      SliverPadding(
+                                        padding: EdgeInsets.zero,
+                                        key: centerKey,
+                                      ),
+                                      SliverList(
+                                        delegate: SliverChildBuilderDelegate(
+                                          (context, index) {
+                                            bool isSentByMe;
+                                            if (historyMessages[index].senderId == uuid) {
+                                              isSentByMe = true;
+                                            } else {
+                                              isSentByMe = false;
+                                            }
+                                            return CommonMessageBubble(
+                                              isSentByMe: isSentByMe,
+                                              bubbleHelper: bubbleHelper,
+                                              sender: isSentByMe ? me : targetUserInformation,
+                                              message: historyMessages[index],
+                                            );
+                                          },
+                                          childCount: historyMessages.length,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                default:
+                                  return const CupertinoActivityIndicator();
+                              }
+                            }),
+                      ),
+                      MessageInputField(
+                        receiverId: chatTargetInformation.id,
+                        removeContextMenu: bubbleHelper.removeContextMenu,
+                        sendMessage: sendMessage,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: FutureBuilder(
-                      //后续可能要修改
-                      future: init,
-                      builder: (context, snapshot) {
-                        switch (snapshot.connectionState) {
-                          case ConnectionState.none:
-                            return const CupertinoActivityIndicator();
-                          case ConnectionState.active:
-                            return const CupertinoActivityIndicator();
-                          case ConnectionState.waiting:
-                            return const CupertinoActivityIndicator();
-                          case ConnectionState.done:
-                            if (snapshot.hasError) {
-                              return const CupertinoActivityIndicator();
-                            }
-                            return CustomScrollView(
-                              controller: _scrollController,
-                              reverse: true,
-                              center: centerKey,
-                              physics: const AlwaysScrollableScrollPhysics(
-                                parent: BouncingScrollPhysics(),
-                              ),
-                              slivers: [
-                                // SliverToBoxAdapter(
-                                //   child: Text("新发送的消息"),
-                                // ),
-                                SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (context, index) {
-                                      bool isSentByMe;
-                                      if (newMessages[index].senderId == uuid) {
-                                        isSentByMe = true;
-                                      } else {
-                                        isSentByMe = false;
-                                      }
-                                      return CommonMessageBubble(
-                                        isSentByMe: isSentByMe,
-                                        bubbleHelper: bubbleHelper,
-                                        sender: isSentByMe?me:targetUserInformation,
-                                        message: newMessages[index],
-                                      );
-                                    },
-                                    childCount: newMessages.length,
-                                  ),
-                                ),
-                                SliverPadding(
-                                  padding: EdgeInsets.zero,
-                                  key: centerKey,
-                                ),
-                                SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (context, index) {
-                                      bool isSentByMe;
-                                      if (historyMessages[index].senderId == uuid) {
-                                        isSentByMe = true;
-                                      } else {
-                                        isSentByMe = false;
-                                      }
-                                      return CommonMessageBubble(
-                                        isSentByMe: isSentByMe,
-                                        bubbleHelper: bubbleHelper,
-                                        sender: isSentByMe?me:targetUserInformation,
-                                        message: historyMessages[index],
-                                      );
-                                    },
-                                    childCount: historyMessages.length,
-                                  ),
-                                ),
-                              ],
-                            );
-                          default:
-                            return const CupertinoActivityIndicator();
-                        }
-                      }),
-                ),
-                MessageInputField(
-                  receiverId: targetUser.id,
-                  removeContextMenu: bubbleHelper.removeContextMenu,
-                  sendMessage: sendMessage,
-                ),
-              ],
             ),
-          ),
-        ),
-      ),
+          )),
     );
   }
 }

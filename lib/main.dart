@@ -15,7 +15,6 @@ import 'login_page/password/password_page.dart';
 import 'reusable_components/snack_bar/network_error_snack_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'login_page/account/account_page.dart';
 import 'models/dio_model.dart';
 import 'models/theme_model.dart';
@@ -25,7 +24,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
+        ChangeNotifierProvider<ThemeModel>(
           create: (context) => ThemeModel(),
         ),
       ],
@@ -66,13 +65,13 @@ class _MetaUni extends State<MetaUni> {
         );
         switch (response.data['code']) {
           case 1:
-          //Message:"用户Token已过期，请重新登录"
+            //Message:"用户Token已过期，请重新登录"
             await prefs.remove('jwt');
             await prefs.remove('uuid');
             _hasLogin = false;
             break;
           case 2:
-          //Message:"账号在另外一台设备登录，若并非您的操作，请及时联系客服反馈情况"
+            //Message:"账号在另外一台设备登录，若并非您的操作，请及时联系客服反馈情况"
             await prefs.remove('jwt');
             await prefs.remove('uuid');
             _hasLogin = false;
@@ -110,9 +109,9 @@ class _MetaUni extends State<MetaUni> {
             case ConnectionState.waiting:
               return const LoadingPage();
             case ConnectionState.done:
-            // if (snapshot.hasError) {
-            //   return const LoadingPage();
-            // }
+              // if (snapshot.hasError) {
+              //   return const LoadingPage();
+              // }
               return MaterialApp(
                 supportedLocales: const [
                   Locale("zh", "CH"),
@@ -127,7 +126,7 @@ class _MetaUni extends State<MetaUni> {
                   useMaterial3: true,
                   fontFamily: 'Roboto',
                   colorScheme:
-                  ColorScheme.fromSeed(seedColor: Color(Provider.of<ThemeModel>(context).seedColor), brightness: Provider.of<ThemeModel>(context).isDarkMode ? Brightness.dark : Brightness.light),
+                      ColorScheme.fromSeed(seedColor: Color(Provider.of<ThemeModel>(context).seedColor), brightness: Provider.of<ThemeModel>(context).isDarkMode ? Brightness.dark : Brightness.light),
                 ),
                 routes: {
                   '/account': (context) => const AccountPage(),

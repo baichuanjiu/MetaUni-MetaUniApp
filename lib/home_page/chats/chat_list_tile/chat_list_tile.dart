@@ -52,6 +52,7 @@ class _ChatListTileState extends State<ChatListTile> with TickerProviderStateMix
   }
 
   late BriefChatTargetInformation chatTarget = BriefChatTargetInformation(
+    chatId: widget.chatListTileData.chat.id,
     targetType: widget.chatListTileData.briefChatTargetInformation.targetType,
     id:widget.chatListTileData.briefChatTargetInformation.id,
     avatar: widget.chatListTileData.briefChatTargetInformation.avatar,

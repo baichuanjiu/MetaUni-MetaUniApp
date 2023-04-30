@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import '../bloc/message/common_message_bloc.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
 import '../database/models/friend/friends_group.dart';
@@ -263,7 +266,8 @@ class _HomePageState extends State<HomePage> {
     final int? uuid = prefs.getInt('uuid');
 
     if (jwt != null && uuid != null) {
-      WebSocketChannel().initChannel(uuid, jwt);
+      WebSocketHelper().initHelper(uuid, jwt);
+      WebSocketChannel().initChannel(WebSocketHelper());
     }
   }
 
@@ -285,53 +289,57 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: _widgetOptions.elementAt(currentPageIndex),
-      ),
-      bottomNavigationBar: NavigationBar(
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentPageIndex = index;
-          });
-        },
-        selectedIndex: currentPageIndex,
-        destinations: <Widget>[
-          NavigationDestination(
-            selectedIcon: Icon(
-              Icons.interests,
-              color: Theme.of(context).colorScheme.onSecondaryContainer,
-            ),
-            icon: Icon(
-              Icons.interests_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            label: '发现',
-          ),
-          NavigationDestination(
-            selectedIcon: Icon(
-              Icons.sms,
-              color: Theme.of(context).colorScheme.onSecondaryContainer,
-            ),
-            icon: Icon(
-              Icons.sms_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            label: '消息',
-          ),
-          NavigationDestination(
-            selectedIcon: Icon(
-              Icons.account_circle,
-              color: Theme.of(context).colorScheme.onSecondaryContainer,
-            ),
-            icon: Icon(
-              Icons.account_circle_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            label: '我的',
-          ),
+    return MultiBlocProvider(
+        providers: [
+          BlocProvider<CommonMessageCubit>.value(value: WebSocketHelper().commonMessageCubit),
         ],
-      ),
-    );
+        child: Scaffold(
+          body: Center(
+            child: _widgetOptions.elementAt(currentPageIndex),
+          ),
+          bottomNavigationBar: NavigationBar(
+            onDestinationSelected: (int index) {
+              setState(() {
+                currentPageIndex = index;
+              });
+            },
+            selectedIndex: currentPageIndex,
+            destinations: <Widget>[
+              NavigationDestination(
+                selectedIcon: Icon(
+                  Icons.interests,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                icon: Icon(
+                  Icons.interests_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: '发现',
+              ),
+              NavigationDestination(
+                selectedIcon: Icon(
+                  Icons.sms,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                icon: Icon(
+                  Icons.sms_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: '消息',
+              ),
+              NavigationDestination(
+                selectedIcon: Icon(
+                  Icons.account_circle,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                icon: Icon(
+                  Icons.account_circle_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: '我的',
+              ),
+            ],
+          ),
+        ));
   }
 }

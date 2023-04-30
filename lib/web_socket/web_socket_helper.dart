@@ -1,6 +1,8 @@
-import 'package:web_socket_channel/io.dart';
-
+import 'package:sqflite/sqflite.dart';
 import '../bloc/message/common_message_bloc.dart';
+import '../database/database_manager.dart';
+import '../database/models/chat/chat.dart';
+import '../database/models/message/common_message.dart';
 
 //单例模式构建webSocketHelper
 class WebSocketHelper {
@@ -14,12 +16,46 @@ class WebSocketHelper {
 
   late int uuid;
   late String jwt;
-  late CommonMessageCubit commonMessageCubit;
+  late Database database;
+  final CommonMessageCubit commonMessageCubit = CommonMessageCubit(null);
 
-  initHelper(int uuid, String jwt,CommonMessageCubit commonMessageCubit) {
+  initHelper(int uuid, String jwt) async{
     this.uuid = uuid;
     this.jwt = jwt;
-    this.commonMessageCubit = commonMessageCubit;
+    database = await DatabaseManager().getDatabase;
+  }
+
+  void storeNewCommonMessage(CommonMessage message) async {
+    await database.transaction((transaction) async {
+      CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
+
+      commonMessageProviderWithTransaction.insert(message);
+
+      ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
+
+      int chatId = message.chatId;
+      Chat? chat = await chatProviderWithTransaction.get(chatId);
+      //后续还要再修改，主要处理 未读消息数 与 消息是否已读
+      if (chat == null) {
+        chatProviderWithTransaction.insert(
+          Chat(
+            id: chatId,
+            uuid: uuid,
+            targetId: message.senderId,
+            isWithOtherUser: true,
+            numberOfUnreadMessages: 0,
+            lastMessageId: message.id,
+            updatedTime: message.createdTime,
+          ),
+        );
+      } else {
+        chatProviderWithTransaction.update({
+          'isDeleted': 0,
+          'lastMessageId': message.id,
+          'updatedTime': message.createdTime.millisecondsSinceEpoch,
+        }, chatId);
+      }
+    });
   }
 
 }
