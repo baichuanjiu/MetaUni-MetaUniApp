@@ -1,5 +1,4 @@
 import 'package:sqflite/sqflite.dart';
-import '../bloc/message/common_message_bloc.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
 import '../database/models/message/common_message.dart';
@@ -17,7 +16,6 @@ class WebSocketHelper {
   late int uuid;
   late String jwt;
   late Database database;
-  final CommonMessageCubit commonMessageCubit = CommonMessageCubit(null);
 
   initHelper(int uuid, String jwt) async{
     this.uuid = uuid;

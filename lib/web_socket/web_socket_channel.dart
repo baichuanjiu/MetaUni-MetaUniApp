@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/message/common_message.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
@@ -14,13 +15,15 @@ class WebSocketChannel {
   }
 
   late IOWebSocketChannel _channel;
-  late WebSocketHelper _helper;
+  late WebSocketHelper _webSocketHelper;
+  late BlocManager _blocManager;
 
-  initChannel(WebSocketHelper helper) {
-    _helper = helper;
+  initChannel(WebSocketHelper webSocketHelper,BlocManager blocManager) {
+    _webSocketHelper = webSocketHelper;
+    _blocManager = blocManager;
     _channel = IOWebSocketChannel.connect(
       Uri.parse('ws://10.0.2.2:45550/metaUni/webSocketAPI/ws'),
-      headers: {'UUID': _helper.uuid, 'JWT': _helper.jwt},
+      headers: {'UUID': _webSocketHelper.uuid, 'JWT': _webSocketHelper.jwt},
     );
     _channel.stream.listen((event) {
       print("收到：$event");
@@ -28,8 +31,8 @@ class WebSocketChannel {
       switch(map["type"]){
         case "NewCommonMessage":
           CommonMessage commonMessage = CommonMessage.fromJson(map["data"]);
-          _helper.storeNewCommonMessage(commonMessage);
-          _helper.commonMessageCubit.receive(commonMessage);
+          _webSocketHelper.storeNewCommonMessage(commonMessage);
+          _blocManager.commonMessageCubit.receive(commonMessage);
           break;
       }
     },onDone: (){

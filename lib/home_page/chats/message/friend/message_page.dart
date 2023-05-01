@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../../../bloc/bloc_manager.dart';
 import '../../../../database/database_manager.dart';
 import '../../../../database/models/chat/chat.dart';
 import '../../../../database/models/message/common_message.dart';
@@ -16,7 +17,6 @@ import '../../../../models/dio_model.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
-import '../../../../web_socket/web_socket_helper.dart';
 import '../../chat_list_tile/models/brief_chat_target_information.dart';
 import 'bubble/bubble.dart';
 import 'bubble/bubble_helper.dart';
@@ -215,7 +215,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<CommonMessageCubit>.value(value: WebSocketHelper().commonMessageCubit),
+        BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
       ],
       child: MultiBlocListener(
           listeners: [

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -267,7 +268,8 @@ class _HomePageState extends State<HomePage> {
 
     if (jwt != null && uuid != null) {
       WebSocketHelper().initHelper(uuid, jwt);
-      WebSocketChannel().initChannel(WebSocketHelper());
+      BlocManager();
+      WebSocketChannel().initChannel(WebSocketHelper(), BlocManager());
     }
   }
 
@@ -291,7 +293,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
         providers: [
-          BlocProvider<CommonMessageCubit>.value(value: WebSocketHelper().commonMessageCubit),
+          BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
         ],
         child: Scaffold(
           body: Center(
