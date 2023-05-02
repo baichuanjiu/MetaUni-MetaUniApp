@@ -17,7 +17,7 @@ class WebSocketHelper {
   late String jwt;
   late Database database;
 
-  initHelper(int uuid, String jwt) async{
+  initHelper(int uuid, String jwt) async {
     this.uuid = uuid;
     this.jwt = jwt;
     database = await DatabaseManager().getDatabase;
@@ -41,7 +41,7 @@ class WebSocketHelper {
             uuid: uuid,
             targetId: message.senderId,
             isWithOtherUser: true,
-            numberOfUnreadMessages: 0,
+            numberOfUnreadMessages: 1,
             lastMessageId: message.id,
             updatedTime: message.createdTime,
           ),
@@ -50,10 +50,10 @@ class WebSocketHelper {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
           'lastMessageId': message.id,
+          'numberOfUnreadMessages': chat.numberOfUnreadMessages + 1,
           'updatedTime': message.createdTime.millisecondsSinceEpoch,
         }, chatId);
       }
     });
   }
-
 }
