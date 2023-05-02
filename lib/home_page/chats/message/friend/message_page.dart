@@ -166,7 +166,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   }
 
   void receiveNewMessage(CommonMessage message) {
-    //后续还要调整，webSocket收到消息时就会存储进数据库中，故此处不需要考虑存储数据的问题，存储数据在webSocket中处理
     setState(() {
       newMessages.add(message);
     });
