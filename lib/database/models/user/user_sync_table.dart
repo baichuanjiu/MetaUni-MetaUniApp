@@ -8,7 +8,8 @@ class UserSyncTable {
   late DateTime updatedTimeForFriendsGroups;
   late DateTime updatedTimeForFriendships;
   late DateTime updatedTimeForChats;
-  late DateTime updatedTimeForFriendsBriefInformation;
+  late DateTime lastSyncTimeForCommonChatStatuses;
+  late DateTime lastSyncTimeForFriendsBriefInformation;
 
   UserSyncTable({
     required this.id,
@@ -18,7 +19,8 @@ class UserSyncTable {
     required this.updatedTimeForFriendsGroups,
     required this.updatedTimeForFriendships,
     required this.updatedTimeForChats,
-    required this.updatedTimeForFriendsBriefInformation,
+    required this.lastSyncTimeForCommonChatStatuses,
+    required this.lastSyncTimeForFriendsBriefInformation,
   });
 
   UserSyncTable.init(this.uuid){
@@ -28,7 +30,8 @@ class UserSyncTable {
     updatedTimeForFriendsGroups = DateTime.parse("2023-01-01T00:00:00.0000000");
     updatedTimeForFriendships = DateTime.parse("2023-01-01T00:00:00.0000000");
     updatedTimeForChats = DateTime.parse("2023-01-01T00:00:00.0000000");
-    updatedTimeForFriendsBriefInformation = DateTime.parse("2023-01-01T00:00:00.0000000");
+    lastSyncTimeForCommonChatStatuses = DateTime.parse("2023-01-01T00:00:00.0000000");
+    lastSyncTimeForFriendsBriefInformation = DateTime.parse("2023-01-01T00:00:00.0000000");
   }
 
   UserSyncTable.fromJson(Map<String, dynamic> map) {
@@ -39,7 +42,8 @@ class UserSyncTable {
     updatedTimeForFriendsGroups = DateTime.parse(map['updatedTimeForFriendsGroups']);
     updatedTimeForFriendships = DateTime.parse(map['updatedTimeForFriendships']);
     updatedTimeForChats = DateTime.parse(map['updatedTimeForChats']);
-    updatedTimeForFriendsBriefInformation = DateTime.parse(map['updatedTimeForFriendsBriefInformation']);
+    lastSyncTimeForCommonChatStatuses = DateTime.parse(map['lastSyncTimeForCommonChatStatuses']);
+    lastSyncTimeForFriendsBriefInformation = DateTime.parse(map['lastSyncTimeForFriendsBriefInformation']);
   }
 
   Map<String, dynamic> toSql() {
@@ -51,7 +55,8 @@ class UserSyncTable {
       'updatedTimeForFriendsGroups': updatedTimeForFriendsGroups.millisecondsSinceEpoch,
       'updatedTimeForFriendships': updatedTimeForFriendships.millisecondsSinceEpoch,
       'updatedTimeForChats': updatedTimeForChats.millisecondsSinceEpoch,
-      'updatedTimeForFriendsBriefInformation':updatedTimeForFriendsBriefInformation.millisecondsSinceEpoch,
+      'lastSyncTimeForCommonChatStatuses': lastSyncTimeForCommonChatStatuses.millisecondsSinceEpoch,
+      'lastSyncTimeForFriendsBriefInformation':lastSyncTimeForFriendsBriefInformation.millisecondsSinceEpoch,
     };
   }
 
@@ -63,7 +68,8 @@ class UserSyncTable {
     updatedTimeForFriendsGroups = DateTime.fromMillisecondsSinceEpoch(map['updatedTimeForFriendsGroups']);
     updatedTimeForFriendships = DateTime.fromMillisecondsSinceEpoch(map['updatedTimeForFriendships']);
     updatedTimeForChats = DateTime.fromMillisecondsSinceEpoch(map['updatedTimeForChats']);
-    updatedTimeForFriendsBriefInformation = DateTime.fromMillisecondsSinceEpoch(map['updatedTimeForFriendsBriefInformation']);
+    lastSyncTimeForCommonChatStatuses = DateTime.fromMillisecondsSinceEpoch(map['lastSyncTimeForCommonChatStatuses']);
+    lastSyncTimeForFriendsBriefInformation = DateTime.fromMillisecondsSinceEpoch(map['lastSyncTimeForFriendsBriefInformation']);
   }
 }
 

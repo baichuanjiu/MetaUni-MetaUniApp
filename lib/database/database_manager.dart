@@ -60,14 +60,16 @@ class DatabaseManager {
   _onCreate(Database database, int version) async {
     await database.execute('CREATE TABLE briefUserInformation(uuid INTEGER PRIMARY KEY, avatar TEXT, nickname TEXT,updatedTime INTEGER)');
     await database.execute(
-        'CREATE TABLE userSyncTable(id INTEGER PRIMARY KEY,uuid INTEGER,sequenceForCommonMessages INTEGER,sequenceForSystemMessages INTEGER,updatedTimeForFriendsGroups INTEGER,updatedTimeForFriendships INTEGER,updatedTimeForChats INTEGER,updatedTimeForFriendsBriefInformation INTEGER)');
+        'CREATE TABLE userSyncTable(id INTEGER PRIMARY KEY,uuid INTEGER,sequenceForCommonMessages INTEGER,sequenceForSystemMessages INTEGER,updatedTimeForFriendsGroups INTEGER,updatedTimeForFriendships INTEGER,updatedTimeForChats INTEGER,lastSyncTimeForCommonChatStatuses INTEGER,lastSyncTimeForFriendsBriefInformation INTEGER)');
     await database.execute('CREATE TABLE friendsGroup(id INTEGER PRIMARY KEY,uuid INTEGER,orderNumber INTEGER,friendsGroupName TEXT,isDeleted INTEGER,updatedTime INTEGER)');
     await database
         .execute('CREATE TABLE friendship(id INTEGER PRIMARY KEY,uuid INTEGER,friendsGroupId INTEGER,friendId INTEGER,shipCreatedTime INTEGER,remark TEXT,isFocus INTEGER,isDeleted INTEGER,updatedTime INTEGER)');
     await database.execute(
         'CREATE TABLE chat(id INTEGER PRIMARY KEY,uuid INTEGER,targetId INTEGER,isWithOtherUser INTEGER,isWithGroup INTEGER,isWithSystem INTEGER,isStickyOnTop INTEGER,isDeleted INTEGER,numberOfUnreadMessages INTEGER,lastMessageId INTEGER,updatedTime INTEGER)');
+    await database
+        .execute('CREATE TABLE commonChatStatus(id INTEGER PRIMARY KEY,uuid INTEGER,chatId INTEGER,lastMessageSendByMe INTEGER,isRead INTEGER,readTime INTEGER,updatedTime INTEGER)');
     await database.execute(
-        'CREATE TABLE commonMessage(id INTEGER PRIMARY KEY,chatId INTEGER,senderId INTEGER,receiverId INTEGER,createdTime INTEGER,isCustom INTEGER,isRecalled INTEGER,isDeleted INTEGER,isReply INTEGER,isImageMessage INTEGER,isVoiceMessage INTEGER,isRead INTEGER,customType TEXT,minimumSupportVersion TEXT,textOnError TEXT,customMessageContent TEXT,messageReplied INTEGER,messageText TEXT,messageImage TEXT,messageVoice TEXT,sequence INTEGER)');
+        'CREATE TABLE commonMessage(id INTEGER PRIMARY KEY,chatId INTEGER,senderId INTEGER,receiverId INTEGER,createdTime INTEGER,isCustom INTEGER,isRecalled INTEGER,isDeleted INTEGER,isReply INTEGER,isImageMessage INTEGER,isVoiceMessage INTEGER,customType TEXT,minimumSupportVersion TEXT,textOnError TEXT,customMessageContent TEXT,messageReplied INTEGER,messageText TEXT,messageImage TEXT,messageVoice TEXT,sequence INTEGER)');
     //await database.execute("");
     //await database.execute("");
   }

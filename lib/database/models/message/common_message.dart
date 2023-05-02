@@ -12,7 +12,6 @@ class CommonMessage {
   late bool isReply; //是否是某条消息的回复
   late bool isImageMessage; //是否是带有图片的消息
   late bool isVoiceMessage; //是否是语音消息
-  late bool isRead; //是否已读
   late String? customType; //特殊消息类型
   late String? minimumSupportVersion; //特殊消息最低支持的应用版本
   late String? textOnError; //特殊消息不支持时，显示的文字
@@ -35,7 +34,6 @@ class CommonMessage {
     this.isReply = false,
     this.isImageMessage = false,
     this.isVoiceMessage = false,
-    this.isRead = false,
     this.customType,
     this.minimumSupportVersion,
     this.textOnError,
@@ -59,7 +57,6 @@ class CommonMessage {
     isReply = map['isReply'];
     isImageMessage = map['isImageMessage'];
     isVoiceMessage = map['isVoiceMessage'];
-    isRead = map['isRead'];
     customType = map['customType'];
     minimumSupportVersion = map['minimumSupportVersion'];
     textOnError = map['textOnError'];
@@ -84,7 +81,6 @@ class CommonMessage {
       'isReply': isReply ? 1 : 0,
       'isImageMessage': isImageMessage ? 1 : 0,
       'isVoiceMessage': isVoiceMessage ? 1 : 0,
-      'isRead': isRead ? 1 : 0,
       'customType': customType,
       'minimumSupportVersion': minimumSupportVersion,
       'textOnError': textOnError,
@@ -109,7 +105,6 @@ class CommonMessage {
     isReply = map['isReply'] > 0;
     isImageMessage = map['isImageMessage'] > 0;
     isVoiceMessage = map['isVoiceMessage'] > 0;
-    isRead = map['isRead'] > 0;
     customType = map['customType'];
     minimumSupportVersion = map['minimumSupportVersion'];
     textOnError = map['textOnError'];

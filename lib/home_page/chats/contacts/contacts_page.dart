@@ -41,12 +41,12 @@ class _ContactsPageState extends State<ContactsPage>{
     final int? uuid = prefs.getInt('uuid');
     UserSyncTable? userSyncTable = await userSyncTableProvider.get(uuid!);
 
-    await syncFriendsInformation(userSyncTable!.updatedTimeForFriendsBriefInformation);
+    await syncFriendsInformation(userSyncTable!.lastSyncTimeForFriendsBriefInformation);
   }
 
   final DioModel dioModel = DioModel();
 
-  syncFriendsInformation(DateTime updatedTimeForFriendsBriefInformation) async {
+  syncFriendsInformation(DateTime lastSyncTimeForFriendsBriefInformation) async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -57,7 +57,7 @@ class _ContactsPageState extends State<ContactsPage>{
       response = await dioModel.dio.get(
         '/metaUni/userAPI/friendship/friendsInformation/sync',
         queryParameters: {
-          'updatedTime': updatedTimeForFriendsBriefInformation,
+          'lastSyncTime': lastSyncTimeForFriendsBriefInformation,
         },
         options: Options(headers: {
           'JWT': jwt,
@@ -92,7 +92,7 @@ class _ContactsPageState extends State<ContactsPage>{
 
             UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
             userSyncTableProviderWithTransaction.update({
-              'updatedTimeForFriendsBriefInformation': updatedTime.millisecondsSinceEpoch,
+              'lastSyncTimeForFriendsBriefInformation': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
       }
