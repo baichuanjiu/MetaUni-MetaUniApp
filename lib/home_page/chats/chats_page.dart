@@ -61,9 +61,10 @@ class _ChatsPageState extends State<ChatsPage> {
         if (info != null) {
           chatListTilesData.add(
             ChatListTileData(
-              chat: chat,
+              chatId: chat.id,
               messagePreview: messagePreview,
               lastMessageCreatedTime: lastMessageCreatedTime,
+              numberOfUnreadMessages: chat.numberOfUnreadMessages,
               briefChatTargetInformation: BriefChatTargetInformation(chatId: chat.id,targetType: "user", id: chat.targetId, avatar: info.avatar, name: remark ?? info.nickname, updatedTime: info.updatedTime),
             ),
           );

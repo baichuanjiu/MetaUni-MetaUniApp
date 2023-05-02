@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'models/brief_chat_target_information.dart';
 import 'models/chat_list_tile_data.dart';
 
-
 class ChatListTile extends StatefulWidget {
   final ChatListTileData chatListTileData;
 
@@ -52,9 +51,9 @@ class _ChatListTileState extends State<ChatListTile> with TickerProviderStateMix
   }
 
   late BriefChatTargetInformation chatTarget = BriefChatTargetInformation(
-    chatId: widget.chatListTileData.chat.id,
+    chatId: widget.chatListTileData.chatId,
     targetType: widget.chatListTileData.briefChatTargetInformation.targetType,
-    id:widget.chatListTileData.briefChatTargetInformation.id,
+    id: widget.chatListTileData.briefChatTargetInformation.id,
     avatar: widget.chatListTileData.briefChatTargetInformation.avatar,
     name: widget.chatListTileData.briefChatTargetInformation.name,
     updatedTime: widget.chatListTileData.briefChatTargetInformation.updatedTime,
@@ -134,15 +133,28 @@ class _ChatListTileState extends State<ChatListTile> with TickerProviderStateMix
                               style: Theme.of(context).textTheme.bodyLarge?.apply(color: Theme.of(context).colorScheme.onSurface),
                             ),
                             subtitle: Text(
-                              widget.chatListTileData.messagePreview??'',
+                              widget.chatListTileData.messagePreview ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.bodyMedium?.apply(color: Theme.of(context).colorScheme.outline),
                             ),
-                            trailing: Text(
-                                widget.chatListTileData.lastMessageCreatedTime?.toString().substring(11, 16)??'',
-                              style: Theme.of(context).textTheme.labelSmall?.apply(color: Theme.of(context).colorScheme.outline),
-                            ),
+                            trailing: widget.chatListTileData.numberOfUnreadMessages == 0
+                                ? Text(
+                                    widget.chatListTileData.lastMessageCreatedTime?.toString().substring(11, 16) ?? '',
+                                    style: Theme.of(context).textTheme.labelMedium?.apply(color: Theme.of(context).colorScheme.outline),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Text(
+                                        widget.chatListTileData.lastMessageCreatedTime?.toString().substring(11, 16) ?? '',
+                                        style: Theme.of(context).textTheme.labelMedium?.apply(color: Theme.of(context).colorScheme.outline),
+                                      ),
+                                      Badge(
+                                        label: Text(widget.chatListTileData.numberOfUnreadMessages > 99 ? "99+" : widget.chatListTileData.numberOfUnreadMessages.toString()),
+                                      ),
+                                    ],
+                                  ),
                             onTap: () {
                               Navigator.pushNamed(context, '/chats/message/friend', arguments: chatTarget);
                             },
