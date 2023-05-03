@@ -68,6 +68,11 @@ class CommonChatStatusProvider {
     await database.insert('commonChatStatus', commonChatStatus.toSql());
     return true;
   }
+
+  Future<bool> update(Map<String, dynamic> values, int chatId) async {
+    await database.update('commonChatStatus', values, where: "chatId=?", whereArgs: [chatId]);
+    return true;
+  }
 }
 
 class CommonChatStatusProviderWithTransaction {

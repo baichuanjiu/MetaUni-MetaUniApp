@@ -4,10 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sqflite/sqflite.dart';
-
-import '../../bloc/ChatListTile/chat_list_tile_bloc.dart';
-import '../../bloc/ChatListTile/models/chat_list_tile_update_data.dart';
 import '../../bloc/bloc_manager.dart';
+import '../../bloc/chat_list_tile/chat_list_tile_bloc.dart';
+import '../../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
 import '../../database/database_manager.dart';
 import '../../database/models/chat/chat.dart';
 import '../../database/models/friend/friendship.dart';

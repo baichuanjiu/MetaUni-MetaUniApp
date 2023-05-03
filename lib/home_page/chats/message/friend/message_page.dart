@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:meta_uni_app/bloc/ChatListTile/models/chat_list_tile_update_data.dart';
 import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../bloc/bloc_manager.dart';
+import '../../../../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
 import '../../../../bloc/message/total_number_of_unread_messages_bloc.dart';
 import '../../../../database/database_manager.dart';
 import '../../../../database/models/chat/chat.dart';
@@ -78,7 +78,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   late BriefChatTargetInformation chatTargetInformation;
   late BriefUserInformation targetUserInformation;
 
-  //后面改成从数据库读取
   late List<CommonMessage> historyMessages = [];
 
   late List<CommonMessage> newMessages = [];
@@ -199,6 +198,11 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
     targetUserInformation = (await briefUserInformationProvider.get(chatTargetInformation.id))!;
+
+    //如何做ReadMessages功能？
+    //传参：chatId即可
+    //通过WebSocket发送消息
+    //{ type: "ReadMessages", chatId: chatId }
 
     //后续要修改 比如每次只获取X条，而并不是一次性全获取
     CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);

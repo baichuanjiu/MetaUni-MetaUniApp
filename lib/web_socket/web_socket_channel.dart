@@ -3,8 +3,7 @@ import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/message/common_message.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
-
-import '../bloc/ChatListTile/models/chat_list_tile_update_data.dart';
+import '../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
 
 //单例模式构建webSocket
 class WebSocketChannel {
@@ -28,6 +27,7 @@ class WebSocketChannel {
       headers: {'UUID': _webSocketHelper.uuid, 'JWT': _webSocketHelper.jwt},
     );
     _channel.stream.listen((event) {
+      print(event);
       Map<dynamic, dynamic> map = jsonDecode(event);
       switch (map["type"]) {
         case "NewCommonMessage":
