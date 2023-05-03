@@ -4,6 +4,8 @@ import 'package:meta_uni_app/database/models/message/common_message.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '../bloc/ChatListTile/models/chat_list_tile_update_data.dart';
+
 //单例模式构建webSocket
 class WebSocketChannel {
   static final WebSocketChannel _instance = WebSocketChannel._();
@@ -18,7 +20,7 @@ class WebSocketChannel {
   late WebSocketHelper _webSocketHelper;
   late BlocManager _blocManager;
 
-  initChannel(WebSocketHelper webSocketHelper,BlocManager blocManager) {
+  initChannel(WebSocketHelper webSocketHelper, BlocManager blocManager) {
     _webSocketHelper = webSocketHelper;
     _blocManager = blocManager;
     _channel = IOWebSocketChannel.connect(
@@ -26,16 +28,19 @@ class WebSocketChannel {
       headers: {'UUID': _webSocketHelper.uuid, 'JWT': _webSocketHelper.jwt},
     );
     _channel.stream.listen((event) {
-      print("收到：$event");
-      Map<dynamic,dynamic> map = jsonDecode(event);
-      switch(map["type"]){
+      Map<dynamic, dynamic> map = jsonDecode(event);
+      switch (map["type"]) {
         case "NewCommonMessage":
           CommonMessage commonMessage = CommonMessage.fromJson(map["data"]);
           _webSocketHelper.storeNewCommonMessage(commonMessage);
           _blocManager.commonMessageCubit.receive(commonMessage);
+          _blocManager.totalNumberOfUnreadMessagesCubit.increment(1);
+          _blocManager.chatListTileDataCubit.shouldUpdate(
+            ChatListTileUpdateData(chatId: commonMessage.chatId),
+          );
           break;
       }
-    },onDone: (){
+    }, onDone: () {
       print("掉线了");
     });
   }
