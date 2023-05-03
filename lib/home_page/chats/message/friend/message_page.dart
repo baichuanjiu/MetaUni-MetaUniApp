@@ -13,6 +13,7 @@ import '../../../../bloc/bloc_manager.dart';
 import '../../../../bloc/message/total_number_of_unread_messages_bloc.dart';
 import '../../../../database/database_manager.dart';
 import '../../../../database/models/chat/chat.dart';
+import '../../../../database/models/chat/common_chat_status.dart';
 import '../../../../database/models/message/common_message.dart';
 import '../../../../database/models/user/brief_user_information.dart';
 import '../../../../models/dio_model.dart';
@@ -158,6 +159,8 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             updatedTime: message.createdTime,
           ),
         );
+        CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+        commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageSendByMe: message.id, isRead: false, readTime: null, updatedTime: message.createdTime));
       } else {
         chatProviderWithTransaction.update({
           'isDeleted': 0,

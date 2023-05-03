@@ -1,3 +1,4 @@
+import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
@@ -46,6 +47,8 @@ class WebSocketHelper {
             updatedTime: message.createdTime,
           ),
         );
+        CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+        commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageSendByMe: null, isRead: null, readTime: null, updatedTime: message.createdTime));
       } else {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
