@@ -300,10 +300,10 @@ class _HomePageState extends State<HomePage> {
 
             for (var data in dataList) {
               CommonChatStatus commonChatStatus = CommonChatStatus.fromJson(data);
-              if (await commonChatStatusProviderWithTransaction.get(commonChatStatus.id) == null) {
+              if (await commonChatStatusProviderWithTransaction.get(commonChatStatus.chatId) == null) {
                 commonChatStatusProviderWithTransaction.insert(commonChatStatus);
               } else {
-                commonChatStatusProviderWithTransaction.update(commonChatStatus.toUpdateSql(), commonChatStatus.id);
+                commonChatStatusProviderWithTransaction.update(commonChatStatus.toUpdateSql(), commonChatStatus.chatId);
               }
             }
 
