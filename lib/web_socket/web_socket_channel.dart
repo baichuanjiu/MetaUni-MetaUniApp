@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/message/common_message.dart';
+import 'package:meta_uni_app/web_socket/models/read_messages_request_data.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
 import '../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
@@ -47,5 +48,9 @@ class WebSocketChannel {
 
   closeChannel() {
     _channel.sink.close();
+  }
+
+  sendReadMessagesRequestData(int chatId){
+    _channel.sink.add(jsonEncode(ReadMessagesRequestData(chatId: chatId)));
   }
 }
