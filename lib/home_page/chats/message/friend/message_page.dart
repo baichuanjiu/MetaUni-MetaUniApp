@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:meta_uni_app/bloc/ChatListTile/models/chat_list_tile_update_data.dart';
 import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../bloc/bloc_manager.dart';
+import '../../../../bloc/message/total_number_of_unread_messages_bloc.dart';
 import '../../../../database/database_manager.dart';
 import '../../../../database/models/chat/chat.dart';
 import '../../../../database/models/message/common_message.dart';
@@ -118,6 +120,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
           default:
             CommonMessage message = CommonMessage.fromJson(response.data['data']);
             storeNewMessage(message);
+            BlocManager().chatListTileDataCubit.shouldUpdate(ChatListTileUpdateData(chatId: message.chatId));
             setState(() {
               newMessages.add(message);
             });
@@ -197,9 +200,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     //后续要修改 比如每次只获取X条，而并不是一次性全获取
     CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
     historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
-    setState(() {
-
-    });
+    setState(() {});
   }
 
   @override
@@ -215,6 +216,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
+        BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
       ],
       child: MultiBlocListener(
           listeners: [
@@ -247,7 +249,14 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: const Icon(Icons.arrow_back_ios_new_outlined),
+                    icon: BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
+                      builder: (context, number) => number == 0
+                          ? const Icon(Icons.arrow_back_ios_new_outlined)
+                          : Badge(
+                              label: Text(number > 99 ? "99+" : number.toString()),
+                              child: const Icon(Icons.arrow_back_ios_new_outlined),
+                            ),
+                    ),
                   ),
                   actions: [
                     IconButton(
