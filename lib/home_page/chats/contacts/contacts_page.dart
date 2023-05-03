@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../../bloc/bloc_manager.dart';
+import '../../../bloc/message/total_number_of_unread_messages_bloc.dart';
 import '../../../database/database_manager.dart';
 import '../../../database/models/user/brief_user_information.dart';
 import '../../../database/models/user/user_sync_table.dart';
@@ -20,7 +23,7 @@ class ContactsPage extends StatefulWidget {
   State<ContactsPage> createState() => _ContactsPageState();
 }
 
-class _ContactsPageState extends State<ContactsPage>{
+class _ContactsPageState extends State<ContactsPage> {
   final _tabs = const <Tab>[
     Tab(
       text: '好友',
@@ -66,7 +69,7 @@ class _ContactsPageState extends State<ContactsPage>{
       );
       switch (response.data['code']) {
         case 1:
-        //Message:"使用了无效的JWT，请重新登录"
+          //Message:"使用了无效的JWT，请重新登录"
           if (mounted) {
             getNormalSnackBar(context, response.data['message']);
             logout(context);
@@ -78,7 +81,6 @@ class _ContactsPageState extends State<ContactsPage>{
           Database database = await DatabaseManager().getDatabase;
 
           await database.transaction((transaction) async {
-
             BriefUserInformationProviderWithTransaction briefUserInformationProviderWithTransaction = BriefUserInformationProviderWithTransaction(transaction);
 
             for (var data in dataList) {
@@ -112,120 +114,132 @@ class _ContactsPageState extends State<ContactsPage>{
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: DefaultTabController(
-        initialIndex: 1,
-        length: _tabs.length,
-        child: NestedScrollView(
-          physics: const BouncingScrollPhysics(),
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return [
-              SliverOverlapAbsorber(
-                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                sliver: SliverAppBar(
-                  title: const Text('通讯录'),
-                  expandedHeight: 275,
-                  collapsedHeight: 56,
-                  floating: false,
-                  pinned: true,
-                  snap: false,
-                  leading: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(Icons.arrow_back_ios_new_outlined),
-                  ),
-                  actions: [
-                    IconButton(tooltip: '添加', onPressed: () {}, icon: const Icon(Icons.person_add_alt_outlined)),
-                  ],
-                  forceElevated: innerBoxIsScrolled,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(0, 80, 0, 5),
-                            child: const ChatsSearchBox(),
-                          ),
-                          Column(
-                            children: ListTile.divideTiles(
-                              context: context,
-                              tiles: [
-                                ListTile(
-                                  title: const Text('新朋友'),
-                                  trailing: const Icon(
-                                    Icons.chevron_right_outlined,
-                                  ),
-                                  onTap: () {},
-                                ),
-                                ListTile(
-                                  title: const Text('群通知'),
-                                  trailing: const Icon(
-                                    Icons.chevron_right_outlined,
-                                  ),
-                                  onTap: () {},
-                                ),
-                              ],
-                            ).toList(),
-                          ),
-                        ],
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
+      ],
+      child: Scaffold(
+        body: DefaultTabController(
+          initialIndex: 1,
+          length: _tabs.length,
+          child: NestedScrollView(
+            physics: const BouncingScrollPhysics(),
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return [
+                SliverOverlapAbsorber(
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  sliver: SliverAppBar(
+                    title: const Text('通讯录'),
+                    expandedHeight: 275,
+                    collapsedHeight: 56,
+                    floating: false,
+                    pinned: true,
+                    snap: false,
+                    leading: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
+                        builder: (context, number) => number == 0
+                            ? const Icon(Icons.arrow_back_ios_new_outlined)
+                            : Badge(
+                                label: Text(number > 99 ? "99+" : number.toString()),
+                                child: const Icon(Icons.arrow_back_ios_new_outlined),
+                              ),
                       ),
                     ),
-                    collapseMode: CollapseMode.parallax,
-                  ),
-                  bottom: TabBar(
-                    tabs: _tabs,
-                    unselectedLabelStyle: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            children: [
-              const FriendsPage(),
-              const FriendsGroupsPage(),
-              Builder(
-                builder: (BuildContext context) {
-                  return CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverOverlapInjector(
-                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                      ),
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (BuildContext context, int index) {
-                            return ListTile(
-                              leading: SizedBox(
-                                width: 45,
-                                height: 45,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5),
-                                  child: const Image(
-                                    image: AssetImage('assets/DefaultAvatar.jpg'),
+                    actions: [
+                      IconButton(tooltip: '添加', onPressed: () {}, icon: const Icon(Icons.person_add_alt_outlined)),
+                    ],
+                    forceElevated: innerBoxIsScrolled,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Center(
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.fromLTRB(0, 80, 0, 5),
+                              child: const ChatsSearchBox(),
+                            ),
+                            Column(
+                              children: ListTile.divideTiles(
+                                context: context,
+                                tiles: [
+                                  ListTile(
+                                    title: const Text('新朋友'),
+                                    trailing: const Icon(
+                                      Icons.chevron_right_outlined,
+                                    ),
+                                    onTap: () {},
                                   ),
-                                ),
-                              ),
-                              title: const Text(
-                                '女朋友',
-                              ),
-                              subtitle: const Text('Hello,World!'),
-                              trailing: Text(
-                                '05:20',
-                                style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 11),
-                              ),
-                              onTap: () {},
-                            );
-                          },
-                          childCount: 30,
+                                  ListTile(
+                                    title: const Text('群通知'),
+                                    trailing: const Icon(
+                                      Icons.chevron_right_outlined,
+                                    ),
+                                    onTap: () {},
+                                  ),
+                                ],
+                              ).toList(),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  );
-                },
-              ),
-            ],
+                      collapseMode: CollapseMode.parallax,
+                    ),
+                    bottom: TabBar(
+                      tabs: _tabs,
+                      unselectedLabelStyle: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              children: [
+                const FriendsPage(),
+                const FriendsGroupsPage(),
+                Builder(
+                  builder: (BuildContext context) {
+                    return CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverOverlapInjector(
+                          handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (BuildContext context, int index) {
+                              return ListTile(
+                                leading: SizedBox(
+                                  width: 45,
+                                  height: 45,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5),
+                                    child: const Image(
+                                      image: AssetImage('assets/DefaultAvatar.jpg'),
+                                    ),
+                                  ),
+                                ),
+                                title: const Text(
+                                  '女朋友',
+                                ),
+                                subtitle: const Text('Hello,World!'),
+                                trailing: Text(
+                                  '05:20',
+                                  style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 11),
+                                ),
+                                onTap: () {},
+                              );
+                            },
+                            childCount: 30,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
