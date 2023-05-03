@@ -68,3 +68,33 @@ class CommonChatStatus {
     updatedTime = DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
   }
 }
+
+class CommonChatStatusProvider {
+  late Database database;
+
+  CommonChatStatusProvider(this.database);
+}
+
+class CommonChatStatusProviderWithTransaction {
+  late Transaction transaction;
+
+  CommonChatStatusProviderWithTransaction(this.transaction);
+
+  Future<bool> insert(CommonChatStatus commonChatStatus) async {
+    await transaction.insert('commonChatStatus', commonChatStatus.toSql());
+    return true;
+  }
+
+  Future<bool> update(Map<String, dynamic> values, int id) async {
+    await transaction.update('commonChatStatus', values, where: "id=?", whereArgs: [id]);
+    return true;
+  }
+
+  Future<CommonChatStatus?> get(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('commonChatStatus', where: "id=?", whereArgs: [id]);
+    if (maps.isNotEmpty) {
+      return CommonChatStatus.fromSql(maps.first);
+    }
+    return null;
+  }
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/bloc/message/total_number_of_unread_messages_bloc.dart';
+import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -60,6 +61,7 @@ class _HomePageState extends State<HomePage> {
     syncFriendships(userSyncTable.updatedTimeForFriendships);
     await syncChats(userSyncTable.updatedTimeForChats);
     updateTotalNumberOfUnreadMessages();
+    syncCommonChatStatus(userSyncTable.lastSyncTimeForCommonChatStatuses);
   }
 
   final DioModel dioModel = DioModel();
@@ -252,6 +254,62 @@ class _HomePageState extends State<HomePage> {
             UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
             userSyncTableProviderWithTransaction.update({
               'updatedTimeForChats': updatedTime.millisecondsSinceEpoch,
+            }, uuid!);
+          });
+      }
+    } catch (e) {
+      if (mounted) {
+        getNetworkErrorSnackBar(context);
+      }
+    }
+  }
+
+  syncCommonChatStatus(DateTime lastSyncTimeForCommonChatStatuses) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? jwt = prefs.getString('jwt');
+    final int? uuid = prefs.getInt('uuid');
+
+    try {
+      Response response;
+      response = await dioModel.dio.get(
+        '/metaUni/messageAPI/chat/commonChatStatus/sync',
+        queryParameters: {
+          'lastSyncTime': lastSyncTimeForCommonChatStatuses,
+        },
+        options: Options(headers: {
+          'JWT': jwt,
+          'UUID': uuid,
+        }),
+      );
+      switch (response.data['code']) {
+        case 1:
+        //Message:"使用了无效的JWT，请重新登录"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            logout(context);
+          }
+          break;
+        default:
+          List<dynamic> dataList = response.data['data']['dataList'];
+          DateTime updatedTime = DateTime.parse(response.data['data']['updatedTime']);
+          Database database = await DatabaseManager().getDatabase;
+
+          await database.transaction((transaction) async {
+            CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+
+            for (var data in dataList) {
+              CommonChatStatus commonChatStatus = CommonChatStatus.fromJson(data);
+              if (await commonChatStatusProviderWithTransaction.get(commonChatStatus.id) == null) {
+                commonChatStatusProviderWithTransaction.insert(commonChatStatus);
+              } else {
+                commonChatStatusProviderWithTransaction.update(commonChatStatus.toUpdateSql(), commonChatStatus.id);
+              }
+            }
+
+            UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+            userSyncTableProviderWithTransaction.update({
+              'lastSyncTimeForCommonChatStatuses': updatedTime.millisecondsSinceEpoch,
             }, uuid!);
           });
       }
