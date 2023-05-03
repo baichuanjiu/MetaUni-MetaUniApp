@@ -67,7 +67,7 @@ class DatabaseManager {
     await database.execute(
         'CREATE TABLE chat(id INTEGER PRIMARY KEY,uuid INTEGER,targetId INTEGER,isWithOtherUser INTEGER,isWithGroup INTEGER,isWithSystem INTEGER,isStickyOnTop INTEGER,isDeleted INTEGER,numberOfUnreadMessages INTEGER,lastMessageId INTEGER,updatedTime INTEGER)');
     await database
-        .execute('CREATE TABLE commonChatStatus(id INTEGER PRIMARY KEY,uuid INTEGER,chatId INTEGER,lastMessageSendByMe INTEGER,isRead INTEGER,readTime INTEGER,updatedTime INTEGER)');
+        .execute('CREATE TABLE commonChatStatus(chatId INTEGER PRIMARY KEY,lastMessageSendByMe INTEGER,isRead INTEGER,readTime INTEGER,updatedTime INTEGER)');
     await database.execute(
         'CREATE TABLE commonMessage(id INTEGER PRIMARY KEY,chatId INTEGER,senderId INTEGER,receiverId INTEGER,createdTime INTEGER,isCustom INTEGER,isRecalled INTEGER,isDeleted INTEGER,isReply INTEGER,isImageMessage INTEGER,isVoiceMessage INTEGER,customType TEXT,minimumSupportVersion TEXT,textOnError TEXT,customMessageContent TEXT,messageReplied INTEGER,messageText TEXT,messageImage TEXT,messageVoice TEXT,sequence INTEGER)');
     //await database.execute("");
