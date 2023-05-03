@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
+import 'package:meta_uni_app/bloc/message/total_number_of_unread_messages_bloc.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -47,7 +48,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  performSyncActions() async {
+  performInitActions() async {
     Database database = await DatabaseManager().getDatabase;
     UserSyncTableProvider userSyncTableProvider = UserSyncTableProvider(database);
     final prefs = await SharedPreferences.getInstance();
@@ -55,9 +56,10 @@ class _HomePageState extends State<HomePage> {
     final int? uuid = prefs.getInt('uuid');
     UserSyncTable? userSyncTable = await userSyncTableProvider.get(uuid!);
 
-    await syncFriendsGroups(userSyncTable!.updatedTimeForFriendsGroups);
-    await syncFriendships(userSyncTable.updatedTimeForFriendships);
+    syncFriendsGroups(userSyncTable!.updatedTimeForFriendsGroups);
+    syncFriendships(userSyncTable.updatedTimeForFriendships);
     await syncChats(userSyncTable.updatedTimeForChats);
+    updateTotalNumberOfUnreadMessages();
   }
 
   final DioModel dioModel = DioModel();
@@ -260,6 +262,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  updateTotalNumberOfUnreadMessages() async{
+    Database database = await DatabaseManager().getDatabase;
+    ChatProvider chatProvider = ChatProvider(database);
+
+    int number = await chatProvider.getTotalNumberOfUnreadMessages();
+    BlocManager().totalNumberOfUnreadMessagesCubit.update(number);
+  }
+
   initWebSocket() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -278,7 +288,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
 
     initDatabase();
-    performSyncActions();
+    performInitActions();
     initWebSocket();
   }
 
@@ -294,6 +304,7 @@ class _HomePageState extends State<HomePage> {
     return MultiBlocProvider(
         providers: [
           BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
+          BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
         ],
         child: Scaffold(
           body: Center(
@@ -318,16 +329,34 @@ class _HomePageState extends State<HomePage> {
                 ),
                 label: '发现',
               ),
-              NavigationDestination(
-                selectedIcon: Icon(
-                  Icons.sms,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+              BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
+                builder: (context, number) => NavigationDestination(
+                  selectedIcon: number == 0
+                      ? Icon(
+                          Icons.sms,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        )
+                      : Badge(
+                          label: Text(number > 99 ? "99+" : number.toString()),
+                          child: Icon(
+                            Icons.sms,
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                  icon: number == 0
+                      ? Icon(
+                          Icons.sms_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        )
+                      : Badge(
+                          label: Text(number > 99 ? "99+" : number.toString()),
+                          child: Icon(
+                            Icons.sms_outlined,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                  label: '消息',
                 ),
-                icon: Icon(
-                  Icons.sms_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                label: '消息',
               ),
               NavigationDestination(
                 selectedIcon: Icon(
