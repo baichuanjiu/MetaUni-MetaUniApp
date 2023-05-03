@@ -138,6 +138,15 @@ class ChatProvider {
     }
     return chats;
   }
+
+  Future<int> getTotalNumberOfUnreadMessages() async{
+    List<Map<String,dynamic>> maps = await database.query('chat',columns: ["numberOfUnreadMessages"] ,where: "isDeleted=0");
+    int number = 0;
+    for (var element in maps) {
+      number += element["numberOfUnreadMessages"] as int;
+    }
+    return number;
+  }
 }
 
 class ChatProviderWithTransaction {
