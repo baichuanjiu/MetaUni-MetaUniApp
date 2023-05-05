@@ -282,6 +282,7 @@ class _HomePageState extends State<HomePage> {
           'UUID': uuid,
         }),
       );
+      print(response);
       switch (response.data['code']) {
         case 1:
         //Message:"使用了无效的JWT，请重新登录"
@@ -315,6 +316,7 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (mounted) {
+        print(e);
         getNetworkErrorSnackBar(context);
       }
     }

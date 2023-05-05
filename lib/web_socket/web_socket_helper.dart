@@ -1,3 +1,4 @@
+import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_manager.dart';
@@ -57,6 +58,14 @@ class WebSocketHelper {
           'updatedTime': message.createdTime.millisecondsSinceEpoch,
         }, chatId);
       }
+    });
+  }
+
+  void readMessages(int chatId) async {
+    await database.transaction((transaction) async {
+      ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
+      int number = await chatProviderWithTransaction.readMessages(chatId);
+      BlocManager().totalNumberOfUnreadMessagesCubit.decrement(number);
     });
   }
 }

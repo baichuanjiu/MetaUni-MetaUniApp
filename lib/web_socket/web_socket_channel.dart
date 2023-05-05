@@ -31,6 +31,16 @@ class WebSocketChannel {
       print(event);
       Map<dynamic, dynamic> map = jsonDecode(event);
       switch (map["type"]) {
+        case "ReadMessagesSucceed":
+          int chatId = map["data"]["chatId"];
+          _webSocketHelper.readMessages(chatId);
+          _blocManager.chatListTileDataCubit.shouldUpdate(
+            ChatListTileUpdateData(chatId: chatId),
+          );
+          break;
+        case "MessagesBeRead":
+          //处理消息已被读
+          break;
         case "NewCommonMessage":
           CommonMessage commonMessage = CommonMessage.fromJson(map["data"]);
           _webSocketHelper.storeNewCommonMessage(commonMessage);
@@ -50,7 +60,11 @@ class WebSocketChannel {
     _channel.sink.close();
   }
 
-  sendReadMessagesRequestData(int chatId){
-    _channel.sink.add(jsonEncode(ReadMessagesRequestData(chatId: chatId)));
+  sendReadMessagesRequestData(int chatId) {
+    _channel.sink.add(
+      jsonEncode(
+        ReadMessagesRequestData(uuid: _webSocketHelper.uuid, jwt: _webSocketHelper.jwt, chatId: chatId),
+      ),
+    );
   }
 }

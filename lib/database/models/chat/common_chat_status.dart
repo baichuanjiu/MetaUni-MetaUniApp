@@ -54,7 +54,7 @@ class CommonChatStatus {
     chatId = map['chatId'];
     lastMessageSendByMe = map['lastMessageSendByMe'];
     isRead = map['isRead'] == null ? null : map['isRead'] > 0;
-    readTime = map['readTime'] == null ? null : DateTime.parse(map['readTime']);
+    readTime = map['readTime'] == null ? null : DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
     updatedTime = DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
   }
 }

@@ -20,6 +20,7 @@ import '../../../../models/dio_model.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
+import '../../../../web_socket/web_socket_channel.dart';
 import '../../chat_list_tile/models/brief_chat_target_information.dart';
 import 'bubble/bubble.dart';
 import 'bubble/bubble_helper.dart';
@@ -77,6 +78,8 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
   late BriefChatTargetInformation chatTargetInformation;
   late BriefUserInformation targetUserInformation;
+  late int totalNumberOfUnreadMessages = 0;
+  late int numberOfUnreadMessagesInChat = 0;
 
   late List<CommonMessage> historyMessages = [];
 
@@ -203,6 +206,12 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     //传参：chatId即可
     //通过WebSocket发送消息
     //{ type: "ReadMessages", chatId: chatId }
+    ChatProvider chatProvider = ChatProvider(database);
+    totalNumberOfUnreadMessages = BlocManager().totalNumberOfUnreadMessagesCubit.get();
+    numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
+    if (numberOfUnreadMessagesInChat > 0) {
+      WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
+    }
 
     //后续要修改 比如每次只获取X条，而并不是一次性全获取
     CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
@@ -229,8 +238,17 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
           listeners: [
             BlocListener<CommonMessageCubit, CommonMessage?>(
               listener: (context, commonMessage) {
-                //后续还要修改，首先得判断是不是此Chat下的消息
-                receiveNewMessage(commonMessage!);
+                if (commonMessage!.chatId == chatTargetInformation.chatId!) {
+                  receiveNewMessage(commonMessage);
+                  WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
+                }
+              },
+            ),
+            BlocListener<TotalNumberOfUnreadMessagesCubit, int?>(
+              listener: (context, number) async {
+                ChatProvider chatProvider = ChatProvider(database);
+                numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
+                totalNumberOfUnreadMessages = number!;
               },
             ),
           ],
@@ -256,13 +274,11 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
-                      builder: (context, number) => number == 0
-                          ? const Icon(Icons.arrow_back_ios_new_outlined)
-                          : Badge(
-                              label: Text(number > 99 ? "99+" : number.toString()),
-                              child: const Icon(Icons.arrow_back_ios_new_outlined),
-                            ),
+                    icon: totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat == 0
+                        ? const Icon(Icons.arrow_back_ios_new_outlined)
+                        : Badge(
+                      label: Text(totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat > 99 ? "99+" : (totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat).toString()),
+                      child: const Icon(Icons.arrow_back_ios_new_outlined),
                     ),
                   ),
                   actions: [

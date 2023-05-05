@@ -139,13 +139,31 @@ class ChatProvider {
     return chats;
   }
 
-  Future<int> getTotalNumberOfUnreadMessages() async{
-    List<Map<String,dynamic>> maps = await database.query('chat',columns: ["numberOfUnreadMessages"] ,where: "isDeleted=0");
+  Future<int> getTotalNumberOfUnreadMessages() async {
+    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "isDeleted=0");
     int number = 0;
     for (var element in maps) {
       number += element["numberOfUnreadMessages"] as int;
     }
     return number;
+  }
+
+  Future<int> getNumberOfUnreadMessages(int id) async{
+    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+    return maps.first["numberOfUnreadMessages"];
+  }
+
+  Future<int> readMessages(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+    int numberOfUnreadMessages = maps.first["numberOfUnreadMessages"];
+    await database.update(
+        'chat',
+        {
+          'numberOfUnreadMessages': 0,
+        },
+        where: "id=?",
+        whereArgs: [id]);
+    return numberOfUnreadMessages;
   }
 }
 
@@ -170,5 +188,18 @@ class ChatProviderWithTransaction {
       return Chat.fromSql(maps.first);
     }
     return null;
+  }
+
+  Future<int> readMessages(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+    int numberOfUnreadMessages = maps.first["numberOfUnreadMessages"];
+    await transaction.update(
+        'chat',
+        {
+          'numberOfUnreadMessages': 0,
+        },
+        where: "id=?",
+        whereArgs: [id]);
+    return numberOfUnreadMessages;
   }
 }
