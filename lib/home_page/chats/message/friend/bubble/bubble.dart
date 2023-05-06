@@ -395,9 +395,9 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
         widgets.add(Container(
           width: 10,
         ));
-        widgets.add(Avatar(widget.sender.avatar));
+        widgets.add(Avatar(widget.sender.uuid, widget.sender.avatar));
       } else {
-        widgets.add(Avatar(widget.sender.avatar));
+        widgets.add(Avatar(widget.sender.uuid, widget.sender.avatar));
         widgets.add(Container(
           width: 10,
         ));
@@ -527,28 +527,35 @@ class MessageImage extends StatelessWidget {
 }
 
 class Avatar extends StatelessWidget {
+  final int uuid;
   final String avatar;
 
-  const Avatar(this.avatar, {super.key});
+  const Avatar(this.uuid, this.avatar, {super.key});
 
   @override
   Widget build(BuildContext context) {
-    return CachedNetworkImage(
-      fadeInDuration: const Duration(milliseconds: 800),
-      fadeOutDuration: const Duration(milliseconds: 200),
-      placeholder: (context, url) => const CupertinoActivityIndicator(),
-      imageUrl: avatar,
-      imageBuilder: (context, imageProvider) => SizedBox(
-        width: 45,
-        height: 45,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: Image(
-            image: imageProvider,
+    return InkWell(
+      borderRadius: BorderRadius.circular(2),
+      onTap: () {
+        Navigator.pushNamed(context, '/user/profile', arguments: uuid);
+      },
+      child: CachedNetworkImage(
+        fadeInDuration: const Duration(milliseconds: 800),
+        fadeOutDuration: const Duration(milliseconds: 200),
+        placeholder: (context, url) => const CupertinoActivityIndicator(),
+        imageUrl: avatar,
+        imageBuilder: (context, imageProvider) => SizedBox(
+          width: 45,
+          height: 45,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image(
+              image: imageProvider,
+            ),
           ),
         ),
+        errorWidget: (context, url, error) => const Icon(Icons.error_outline),
       ),
-      errorWidget: (context, url, error) => const Icon(Icons.error_outline),
     );
   }
 }
