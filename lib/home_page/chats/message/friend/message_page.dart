@@ -325,81 +325,86 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                   if (snapshot.hasError) {
                                     return const CupertinoActivityIndicator();
                                   }
-                                  return CustomScrollView(
-                                    controller: _scrollController,
-                                    reverse: true,
-                                    center: centerKey,
-                                    physics: const AlwaysScrollableScrollPhysics(
-                                      parent: BouncingScrollPhysics(),
+                                  return RefreshIndicator(
+                                    onRefresh: () async {
+                                      await Future.delayed(const Duration(seconds: 1));
+                                    },
+                                    child: CustomScrollView(
+                                      controller: _scrollController,
+                                      reverse: true,
+                                      center: centerKey,
+                                      physics: const AlwaysScrollableScrollPhysics(
+                                        parent: BouncingScrollPhysics(),
+                                      ),
+                                      slivers: [
+                                        SliverList(
+                                          delegate: SliverChildBuilderDelegate(
+                                                (context, index) {
+                                              bool isSentByMe;
+                                              if (newMessages[index].senderId == uuid) {
+                                                isSentByMe = true;
+                                              } else {
+                                                isSentByMe = false;
+                                              }
+                                              if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! > historyMessagesMaxId) {
+                                                if(commonChatStatus.lastMessageSendByMe == newMessages[index].id && commonChatStatus.isRead!){
+                                                  return CommonMessageBubble(
+                                                    isSentByMe: isSentByMe,
+                                                    bubbleHelper: bubbleHelper,
+                                                    sender: isSentByMe ? me : targetUserInformation,
+                                                    message: newMessages[index],
+                                                    isRead: commonChatStatus.isRead!,
+                                                    readTime: commonChatStatus.readTime!,
+                                                  );
+                                                }
+                                              }
+                                              return CommonMessageBubble(
+                                                isSentByMe: isSentByMe,
+                                                bubbleHelper: bubbleHelper,
+                                                sender: isSentByMe ? me : targetUserInformation,
+                                                message: newMessages[index],
+                                              );
+                                            },
+                                            childCount: newMessages.length,
+                                          ),
+                                        ),
+                                        SliverPadding(
+                                          padding: EdgeInsets.zero,
+                                          key: centerKey,
+                                        ),
+                                        SliverList(
+                                          delegate: SliverChildBuilderDelegate(
+                                                (context, index) {
+                                              bool isSentByMe;
+                                              if (historyMessages[index].senderId == uuid) {
+                                                isSentByMe = true;
+                                              } else {
+                                                isSentByMe = false;
+                                              }
+                                              if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! <= historyMessagesMaxId) {
+                                                if(commonChatStatus.lastMessageSendByMe == historyMessages[index].id && commonChatStatus.isRead!){
+                                                  return CommonMessageBubble(
+                                                    isSentByMe: isSentByMe,
+                                                    bubbleHelper: bubbleHelper,
+                                                    sender: isSentByMe ? me : targetUserInformation,
+                                                    message: historyMessages[index],
+                                                    isRead: commonChatStatus.isRead!,
+                                                    readTime: commonChatStatus.readTime!,
+                                                  );
+                                                }
+                                              }
+                                              return CommonMessageBubble(
+                                                isSentByMe: isSentByMe,
+                                                bubbleHelper: bubbleHelper,
+                                                sender: isSentByMe ? me : targetUserInformation,
+                                                message: historyMessages[index],
+                                              );
+                                            },
+                                            childCount: historyMessages.length,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    slivers: [
-                                      SliverList(
-                                        delegate: SliverChildBuilderDelegate(
-                                          (context, index) {
-                                            bool isSentByMe;
-                                            if (newMessages[index].senderId == uuid) {
-                                              isSentByMe = true;
-                                            } else {
-                                              isSentByMe = false;
-                                            }
-                                            if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! > historyMessagesMaxId) {
-                                              if(commonChatStatus.lastMessageSendByMe == newMessages[index].id && commonChatStatus.isRead!){
-                                                return CommonMessageBubble(
-                                                  isSentByMe: isSentByMe,
-                                                  bubbleHelper: bubbleHelper,
-                                                  sender: isSentByMe ? me : targetUserInformation,
-                                                  message: newMessages[index],
-                                                  isRead: commonChatStatus.isRead!,
-                                                  readTime: commonChatStatus.readTime!,
-                                                );
-                                              }
-                                            }
-                                            return CommonMessageBubble(
-                                              isSentByMe: isSentByMe,
-                                              bubbleHelper: bubbleHelper,
-                                              sender: isSentByMe ? me : targetUserInformation,
-                                              message: newMessages[index],
-                                            );
-                                          },
-                                          childCount: newMessages.length,
-                                        ),
-                                      ),
-                                      SliverPadding(
-                                        padding: EdgeInsets.zero,
-                                        key: centerKey,
-                                      ),
-                                      SliverList(
-                                        delegate: SliverChildBuilderDelegate(
-                                          (context, index) {
-                                            bool isSentByMe;
-                                            if (historyMessages[index].senderId == uuid) {
-                                              isSentByMe = true;
-                                            } else {
-                                              isSentByMe = false;
-                                            }
-                                            if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! <= historyMessagesMaxId) {
-                                              if(commonChatStatus.lastMessageSendByMe == historyMessages[index].id && commonChatStatus.isRead!){
-                                                return CommonMessageBubble(
-                                                  isSentByMe: isSentByMe,
-                                                  bubbleHelper: bubbleHelper,
-                                                  sender: isSentByMe ? me : targetUserInformation,
-                                                  message: historyMessages[index],
-                                                  isRead: commonChatStatus.isRead!,
-                                                  readTime: commonChatStatus.readTime!,
-                                                );
-                                              }
-                                            }
-                                            return CommonMessageBubble(
-                                              isSentByMe: isSentByMe,
-                                              bubbleHelper: bubbleHelper,
-                                              sender: isSentByMe ? me : targetUserInformation,
-                                              message: historyMessages[index],
-                                            );
-                                          },
-                                          childCount: historyMessages.length,
-                                        ),
-                                      ),
-                                    ],
                                   );
                                 default:
                                   return const CupertinoActivityIndicator();

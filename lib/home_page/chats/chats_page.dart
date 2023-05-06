@@ -207,37 +207,38 @@ class _ChatsPageState extends State<ChatsPage> {
                   children: [
                     const ChatsSearchBox(),
                     FutureBuilder(
-                        future: performInitActions,
-                        builder: (context, snapshot) {
-                          switch (snapshot.connectionState) {
-                            case ConnectionState.none:
+                      future: performInitActions,
+                      builder: (context, snapshot) {
+                        switch (snapshot.connectionState) {
+                          case ConnectionState.none:
+                            return const LoadingPage();
+                          case ConnectionState.active:
+                            return const LoadingPage();
+                          case ConnectionState.waiting:
+                            return const LoadingPage();
+                          case ConnectionState.done:
+                            if (snapshot.hasError) {
                               return const LoadingPage();
-                            case ConnectionState.active:
-                              return const LoadingPage();
-                            case ConnectionState.waiting:
-                              return const LoadingPage();
-                            case ConnectionState.done:
-                              if (snapshot.hasError) {
-                                return const LoadingPage();
-                              }
-                              return Column(
-                                children: chatListTiles.isEmpty
-                                    ? [
-                                        Center(
-                                          child: Text(
-                                            "还未收到任何消息呢！",
-                                            style: Theme.of(context).textTheme.bodyLarge,
-                                          ),
+                            }
+                            return Column(
+                              children: chatListTiles.isEmpty
+                                  ? [
+                                      Center(
+                                        child: Text(
+                                          "还未收到任何消息呢！",
+                                          style: Theme.of(context).textTheme.bodyLarge,
                                         ),
-                                      ]
-                                    : [
-                                        ...chatListTiles,
-                                      ],
-                              );
-                            default:
-                              return const LoadingPage();
-                          }
-                        }),
+                                      ),
+                                    ]
+                                  : [
+                                      ...chatListTiles,
+                                    ],
+                            );
+                          default:
+                            return const LoadingPage();
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
