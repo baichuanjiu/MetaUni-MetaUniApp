@@ -1,21 +1,28 @@
 import 'dart:convert';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import '../../../../../database/models/message/common_message.dart';
 import '../../../../../database/models/user/brief_user_information.dart';
 import 'bubble_helper.dart';
-
 
 class CommonMessageBubble extends StatefulWidget {
   final bool isSentByMe;
   final CommonMessageBubbleHelper bubbleHelper;
   final BriefUserInformation sender;
   final CommonMessage message;
+  final bool isRead;
+  final DateTime? readTime;
 
-  const CommonMessageBubble({super.key, required this.isSentByMe, required this.bubbleHelper,required this.sender, required this.message,});
+  const CommonMessageBubble({
+    super.key,
+    required this.isSentByMe,
+    required this.bubbleHelper,
+    required this.sender,
+    required this.message,
+    this.isRead = false,
+    this.readTime,
+  });
 
   @override
   State<CommonMessageBubble> createState() => _CommonMessageBubbleState();
@@ -203,7 +210,12 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
           isImageMessage: true,
           messageImage: '["http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg"]');
       //后续改成从数据库获取
-      final BriefUserInformation sender = BriefUserInformation(uuid: repliedMessage.senderId, avatar: 'http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg', nickname: 'nickname',updatedTime: DateTime.now(),);
+      final BriefUserInformation sender = BriefUserInformation(
+        uuid: repliedMessage.senderId,
+        avatar: 'http://10.0.2.2:9000/user-avatar/DefaultAvatar.jpg',
+        nickname: 'nickname',
+        updatedTime: DateTime.now(),
+      );
 
       List<Widget> getContent() {
         List<Widget> content = [];
@@ -322,7 +334,7 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
 
     late Widget bubbleContent = Flexible(
       child: Column(
-        crossAxisAlignment: widget.isSentByMe ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: widget.isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           InkWell(
             onTapDown: (details) {
@@ -361,11 +373,16 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
           ),
           SizedBox(
             height: 15,
-            child: Text(
-              //待调整
-              widget.message.createdTime.toString().substring(11, 16),
-              style: Theme.of(context).textTheme.labelSmall!.apply(color: Theme.of(context).colorScheme.outline),
-            ),
+            child: widget.isRead
+                ? Text(
+                    "已读  ${widget.readTime.toString().substring(11, 16)}",
+                    style: Theme.of(context).textTheme.labelSmall!.apply(color: Theme.of(context).colorScheme.outline),
+                  )
+                : Text(
+                    //待调整
+                    widget.message.createdTime.toString().substring(11, 16),
+                    style: Theme.of(context).textTheme.labelSmall!.apply(color: Theme.of(context).colorScheme.outline),
+                  ),
           ),
         ],
       ),

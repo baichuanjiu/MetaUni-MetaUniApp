@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
+import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:meta_uni_app/database/models/message/common_message.dart';
 import 'package:meta_uni_app/web_socket/models/read_messages_request_data.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
@@ -39,7 +40,9 @@ class WebSocketChannel {
           );
           break;
         case "MessagesBeRead":
-          //处理消息已被读
+          CommonChatStatus commonChatStatus = CommonChatStatus.fromJson(map["data"]);
+          _webSocketHelper.updateCommonChatStatus(commonChatStatus);
+          _blocManager.commonChatStatusCubit.shouldUpdate(commonChatStatus);
           break;
         case "NewCommonMessage":
           CommonMessage commonMessage = CommonMessage.fromJson(map["data"]);

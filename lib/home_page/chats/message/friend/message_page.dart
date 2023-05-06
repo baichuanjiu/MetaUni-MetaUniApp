@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:meta_uni_app/bloc/message/common_chat_status_bloc.dart';
 import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -36,7 +37,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   EditableTextState? editableTextState;
   late CommonMessageBubbleHelper bubbleHelper = CommonMessageBubbleHelper(setEditableTextState, removeContextMenu);
 
-  //后续要修改
   late Future<dynamic> init;
   late int uuid;
   late String jwt;
@@ -47,7 +47,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
   late BriefUserInformation me;
 
-  //后续要修改
   _init() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -84,6 +83,10 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   late List<CommonMessage> historyMessages = [];
 
   late List<CommonMessage> newMessages = [];
+
+  late int historyMessagesMaxId;
+
+  late CommonChatStatus commonChatStatus;
 
   void sendMessage(CommonMessageSendData sendData) async {
     if (sendData.isTextMessage) {
@@ -190,7 +193,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   void initState() {
     super.initState();
 
-    //后续要修改
     init = _init();
   }
 
@@ -198,14 +200,12 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   void didChangeDependencies() async {
     super.didChangeDependencies();
 
+    //后续要修改，首先有可能进入该页面时还没有ChatId
+
     chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
     targetUserInformation = (await briefUserInformationProvider.get(chatTargetInformation.id))!;
 
-    //如何做ReadMessages功能？
-    //传参：chatId即可
-    //通过WebSocket发送消息
-    //{ type: "ReadMessages", chatId: chatId }
     ChatProvider chatProvider = ChatProvider(database);
     totalNumberOfUnreadMessages = BlocManager().totalNumberOfUnreadMessagesCubit.get();
     numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
@@ -216,6 +216,12 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     //后续要修改 比如每次只获取X条，而并不是一次性全获取
     CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
     historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
+
+    historyMessagesMaxId = historyMessages[0].id;
+
+    CommonChatStatusProvider commonChatStatusProvider = CommonChatStatusProvider(database);
+    commonChatStatus = (await commonChatStatusProvider.get(chatTargetInformation.chatId!))!;
+
     setState(() {});
   }
 
@@ -233,6 +239,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       providers: [
         BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
         BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
+        BlocProvider<CommonChatStatusCubit>.value(value: BlocManager().commonChatStatusCubit),
       ],
       child: MultiBlocListener(
           listeners: [
@@ -249,6 +256,14 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                 ChatProvider chatProvider = ChatProvider(database);
                 numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
                 totalNumberOfUnreadMessages = number!;
+              },
+            ),
+            BlocListener<CommonChatStatusCubit, CommonChatStatus?>(
+              listener: (context, newStatus) {
+                if (newStatus!.chatId == chatTargetInformation.chatId!) {
+                  commonChatStatus = newStatus;
+                  setState(() {});
+                }
               },
             ),
           ],
@@ -277,9 +292,9 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                     icon: totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat == 0
                         ? const Icon(Icons.arrow_back_ios_new_outlined)
                         : Badge(
-                      label: Text(totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat > 99 ? "99+" : (totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat).toString()),
-                      child: const Icon(Icons.arrow_back_ios_new_outlined),
-                    ),
+                            label: Text(totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat > 99 ? "99+" : (totalNumberOfUnreadMessages - numberOfUnreadMessagesInChat).toString()),
+                            child: const Icon(Icons.arrow_back_ios_new_outlined),
+                          ),
                   ),
                   actions: [
                     IconButton(
@@ -318,9 +333,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                       parent: BouncingScrollPhysics(),
                                     ),
                                     slivers: [
-                                      // SliverToBoxAdapter(
-                                      //   child: Text("新发送的消息"),
-                                      // ),
                                       SliverList(
                                         delegate: SliverChildBuilderDelegate(
                                           (context, index) {
@@ -329,6 +341,18 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                               isSentByMe = true;
                                             } else {
                                               isSentByMe = false;
+                                            }
+                                            if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! > historyMessagesMaxId) {
+                                              if(commonChatStatus.lastMessageSendByMe == newMessages[index].id && commonChatStatus.isRead!){
+                                                return CommonMessageBubble(
+                                                  isSentByMe: isSentByMe,
+                                                  bubbleHelper: bubbleHelper,
+                                                  sender: isSentByMe ? me : targetUserInformation,
+                                                  message: newMessages[index],
+                                                  isRead: commonChatStatus.isRead!,
+                                                  readTime: commonChatStatus.readTime!,
+                                                );
+                                              }
                                             }
                                             return CommonMessageBubble(
                                               isSentByMe: isSentByMe,
@@ -352,6 +376,18 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                               isSentByMe = true;
                                             } else {
                                               isSentByMe = false;
+                                            }
+                                            if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! <= historyMessagesMaxId) {
+                                              if(commonChatStatus.lastMessageSendByMe == historyMessages[index].id && commonChatStatus.isRead!){
+                                                return CommonMessageBubble(
+                                                  isSentByMe: isSentByMe,
+                                                  bubbleHelper: bubbleHelper,
+                                                  sender: isSentByMe ? me : targetUserInformation,
+                                                  message: historyMessages[index],
+                                                  isRead: commonChatStatus.isRead!,
+                                                  readTime: commonChatStatus.readTime!,
+                                                );
+                                              }
                                             }
                                             return CommonMessageBubble(
                                               isSentByMe: isSentByMe,

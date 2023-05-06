@@ -73,6 +73,14 @@ class CommonChatStatusProvider {
     await database.update('commonChatStatus', values, where: "chatId=?", whereArgs: [chatId]);
     return true;
   }
+
+  Future<CommonChatStatus?> get(int chatId) async {
+    List<Map<String, dynamic>> maps = await database.query('commonChatStatus', where: "chatId=?", whereArgs: [chatId]);
+    if (maps.isNotEmpty) {
+      return CommonChatStatus.fromSql(maps.first);
+    }
+    return null;
+  }
 }
 
 class CommonChatStatusProviderWithTransaction {

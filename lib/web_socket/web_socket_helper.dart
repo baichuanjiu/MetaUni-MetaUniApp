@@ -68,4 +68,19 @@ class WebSocketHelper {
       BlocManager().totalNumberOfUnreadMessagesCubit.decrement(number);
     });
   }
+
+  void updateCommonChatStatus(CommonChatStatus newStatus) async {
+    await database.transaction((transaction) async {
+      CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+      CommonChatStatus? commonChatStatus = await commonChatStatusProviderWithTransaction.get(newStatus.chatId);
+      if(commonChatStatus == null)
+      {
+        commonChatStatusProviderWithTransaction.insert(newStatus);
+      }
+      else
+      {
+        commonChatStatusProviderWithTransaction.update(newStatus.toUpdateSql(), newStatus.chatId);
+      }
+    });
+  }
 }
