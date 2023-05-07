@@ -16,6 +16,7 @@ class _UserSearchResultPageState extends State<UserSearchResultPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    searchResult = [];
     List<dynamic> list = ModalRoute.of(context)!.settings.arguments as List<dynamic>;
     for (var element in list) {
       searchResult.add(BriefUserSearchResultData.fromJson(element));
