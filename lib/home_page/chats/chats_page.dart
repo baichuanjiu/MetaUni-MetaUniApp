@@ -168,8 +168,14 @@ class _ChatsPageState extends State<ChatsPage> {
                         title: Text('创建群聊'),
                       ),
                     ),
-                    const PopupMenuItem(
-                      child: ListTile(
+                    PopupMenuItem(
+                      onTap: () async {
+                        await Future.delayed(Duration.zero);
+                        if(mounted){
+                          Navigator.pushNamed(context, '/contacts/search');
+                        }
+                      },
+                      child: const ListTile(
                         leading: Icon(
                           Icons.person_add_alt_rounded,
                         ),

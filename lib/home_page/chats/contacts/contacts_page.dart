@@ -149,7 +149,13 @@ class _ContactsPageState extends State<ContactsPage> {
                       ),
                     ),
                     actions: [
-                      IconButton(tooltip: '添加', onPressed: () {}, icon: const Icon(Icons.person_add_alt_outlined)),
+                      IconButton(
+                        tooltip: '添加',
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/contacts/search');
+                        },
+                        icon: const Icon(Icons.person_add_alt_outlined),
+                      ),
                     ],
                     forceElevated: innerBoxIsScrolled,
                     flexibleSpace: FlexibleSpaceBar(
