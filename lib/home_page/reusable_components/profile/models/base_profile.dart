@@ -1,4 +1,4 @@
-class UserProfile {
+class BaseProfile {
   late int uuid;
   late String account;
   late List<String> roles;
@@ -10,9 +10,9 @@ class UserProfile {
   late String? major;
   late String? grade;
 
-  UserProfile(this.uuid, this.account, this.roles, this.gender, this.nickname, this.avatar, this.campus, this.department, this.major, this.grade);
+  BaseProfile(this.uuid, this.account, this.roles, this.gender, this.nickname, this.avatar, this.campus, this.department, this.major, this.grade);
 
-  UserProfile.fromJson(Map<String, dynamic> map) {
+  BaseProfile.fromJson(Map<String, dynamic> map) {
     uuid = map['uuid'];
     account = map['account'];
     List<dynamic> tempRoles = map['roles'];

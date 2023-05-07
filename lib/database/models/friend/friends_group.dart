@@ -80,6 +80,14 @@ class FriendsGroupProvider {
     return null;
   }
 
+  Future<String?> getName(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('friendsGroup',columns: ['friendsGroupName'], where: "id=?", whereArgs: [id]);
+    if (maps.isNotEmpty) {
+      return maps.first['friendsGroupName'];
+    }
+    return null;
+  }
+
   Future<List<FriendsGroup>> getAll() async {
     List<FriendsGroup> friendsGroups = [];
     List<Map<String, dynamic>> maps = await database.query('friendsGroup');

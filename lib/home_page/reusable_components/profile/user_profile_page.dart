@@ -3,9 +3,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:meta_uni_app/database/models/friend/friends_group.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../database/database_manager.dart';
 import '../../../database/models/user/brief_user_information.dart';
 import '../../../models/dio_model.dart';
@@ -13,7 +15,8 @@ import '../../../reusable_components/logout/logout.dart';
 import '../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../reusable_components/snack_bar/no_permission_snack_bar.dart';
 import '../../../reusable_components/snack_bar/normal_snack_bar.dart';
-import 'models/user_profile.dart';
+import 'models/base_profile.dart';
+import 'models/friend_profile.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -26,9 +29,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final DioModel dioModel = DioModel();
   late int queryUUID;
   late Future<dynamic> initUserProfile;
-  late UserProfile userProfile;
+  late dynamic userProfile;
   late bool isLoading = true;
-  late bool isReadonly;
+  late bool isMe;
+  late bool isFriend;
 
   _initUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,13 +65,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
           }
           break;
         default:
-          if (queryUUID != uuid) {
-            isReadonly = true;
-          } else {
-            isReadonly = false;
+          switch (response.data['data']['profileType']) {
+            case "me":
+              isMe = true;
+              isFriend = false;
+              userProfile = BaseProfile.fromJson(response.data['data']['profile']);
+              isLoading = false;
+              break;
+            case "friend":
+              isMe = false;
+              isFriend = true;
+              userProfile = FriendProfile.fromJson(response.data['data']['profile']);
+              isLoading = false;
+              break;
+            case "stranger":
+              isMe = false;
+              isFriend = false;
+              userProfile = BaseProfile.fromJson(response.data['data']['profile']);
+              isLoading = false;
+              break;
           }
-          userProfile = UserProfile.fromJson(response.data['data']);
-          isLoading = false;
       }
     } catch (e) {
       if (mounted) {
@@ -92,39 +109,31 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('个人信息'),
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back_ios_new_outlined),
-        ),
-      ),
-      body: FutureBuilder(
-          future: initUserProfile,
-          builder: (context, snapshot) {
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-                return const LoadingPage();
-              case ConnectionState.active:
-                return const LoadingPage();
-              case ConnectionState.waiting:
-                return const LoadingPage();
-              case ConnectionState.done:
-                if (snapshot.hasError) {
-                  return const LoadingPage();
-                }
-                return isLoading
-                    ? const LoadingPage()
-                    : isReadonly
-                        ? ReadonlyPage(userProfile)
-                        : EditablePage(userProfile);
-              default:
-                return const LoadingPage();
+    return FutureBuilder(
+      future: initUserProfile,
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+            return const LoadingPage();
+          case ConnectionState.active:
+            return const LoadingPage();
+          case ConnectionState.waiting:
+            return const LoadingPage();
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              return const LoadingPage();
             }
-          }),
+            return isLoading
+                ? const LoadingPage()
+                : isMe
+                    ? MyProfilePage(userProfile)
+                    : isFriend
+                        ? FriendProfilePage(userProfile)
+                        : StrangerProfilePage(userProfile);
+          default:
+            return const LoadingPage();
+        }
+      },
     );
   }
 }
@@ -134,100 +143,24 @@ class LoadingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SafeArea(
-      child: Center(
+    return const Scaffold(
+      body: Center(
         child: CupertinoActivityIndicator(),
       ),
     );
   }
 }
 
-class ReadonlyPage extends StatelessWidget {
-  final UserProfile userProfile;
+class MyProfilePage extends StatefulWidget {
+  final BaseProfile userProfile;
 
-  const ReadonlyPage(this.userProfile, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/view/image',
-                          arguments: {
-                            "heroTag": "avatar",
-                            "image": userProfile.avatar,
-                          },
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
-                        child: Avatar(userProfile.avatar),
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: Text(
-                                userProfile.nickname,
-                                style: Theme.of(context).textTheme.headlineSmall,
-                              ),
-                            ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                child: RoleChips(userProfile.roles),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  height: 10,
-                ),
-                InformationCard(userProfile),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class EditablePage extends StatefulWidget {
-  final UserProfile userProfile;
-
-  const EditablePage(this.userProfile, {super.key});
+  const MyProfilePage(this.userProfile, {super.key});
 
   @override
-  State<EditablePage> createState() => _EditablePageState();
+  State<MyProfilePage> createState() => _MyProfilePageState();
 }
 
-class _EditablePageState extends State<EditablePage> {
+class _MyProfilePageState extends State<MyProfilePage> {
   ImagePicker imagePicker = ImagePicker();
   final DioModel dioModel = DioModel();
 
@@ -311,245 +244,517 @@ class _EditablePageState extends State<EditablePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(15),
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (context) {
-                            return ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 288),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        height: 4,
-                                        width: 32,
-                                        margin: const EdgeInsets.fromLTRB(0, 22, 0, 22),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                                          borderRadius: const BorderRadius.all(
-                                            Radius.circular(2),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("个人信息"),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(15),
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) {
+                              return ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 288),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          height: 4,
+                                          width: 32,
+                                          margin: const EdgeInsets.fromLTRB(0, 22, 0, 22),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                                            borderRadius: const BorderRadius.all(
+                                              Radius.circular(2),
+                                            ),
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                    Expanded(
+                                      child: SingleChildScrollView(
+                                        physics: const BouncingScrollPhysics(),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: ListTile.divideTiles(
+                                            context: context,
+                                            tiles: [
+                                              SizedBox(
+                                                height: 60,
+                                                child: InkWell(
+                                                  onTap: () async {
+                                                    if (await Permission.photos.request().isGranted) {
+                                                      final XFile? image = await imagePicker.pickImage(source: ImageSource.gallery);
+                                                      if (mounted) {
+                                                        if (image != null) {
+                                                          CroppedFile? croppedAvatar = await cropAvatar(image);
+                                                          if (mounted) {
+                                                            if (croppedAvatar != null) {
+                                                              await uploadAvatar(croppedAvatar);
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    } else {
+                                                      if (mounted) {
+                                                        Navigator.pop(context);
+                                                        getPermissionDeniedSnackBar(context, '未获得相册访问权限');
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text('从相册选择照片'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                height: 60,
+                                                child: InkWell(
+                                                  onTap: () async {
+                                                    if (await Permission.camera.request().isGranted) {
+                                                      final XFile? image = await imagePicker.pickImage(source: ImageSource.camera);
+                                                      if (mounted) {
+                                                        if (image != null) {
+                                                          CroppedFile? croppedAvatar = await cropAvatar(image);
+                                                          if (mounted) {
+                                                            if (croppedAvatar != null) {
+                                                              await uploadAvatar(croppedAvatar);
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    } else {
+                                                      if (mounted) {
+                                                        Navigator.pop(context);
+                                                        getPermissionDeniedSnackBar(context, '未获得相机使用权限');
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text('拍照'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                height: 60,
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                    Navigator.pushNamed(
+                                                      context,
+                                                      '/view/image',
+                                                      arguments: {
+                                                        "heroTag": "avatar",
+                                                        "image": widget.userProfile.avatar,
+                                                      },
+                                                    );
+                                                  },
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text('查看大图'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                height: 60,
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Text('取消'),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ).toList(),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                          child: Stack(
+                            children: [
+                              Avatar(widget.userProfile.avatar),
+                              Positioned(
+                                bottom: -28,
+                                right: -28,
+                                child: Container(
+                                  height: 60,
+                                  width: 60,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 1,
+                                right: 1,
+                                child: Icon(
+                                  Icons.camera_outlined,
+                                  color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/edit/nickname');
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        widget.userProfile.nickname,
+                                        style: Theme.of(context).textTheme.headlineSmall,
+                                      ),
+                                      Container(
+                                        width: 5,
+                                      ),
+                                      Icon(
+                                        Icons.edit_outlined,
+                                        size: 20,
+                                        color: Theme.of(context).colorScheme.outline,
                                       ),
                                     ],
                                   ),
-                                  Expanded(
+                                ),
+                              ),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                  child: RoleChips(widget.userProfile.roles),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    height: 10,
+                  ),
+                  BaseInformationCard(widget.userProfile),
+                ],
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class FriendProfilePage extends StatefulWidget {
+  final FriendProfile userProfile;
+
+  const FriendProfilePage(this.userProfile, {super.key});
+
+  @override
+  State<FriendProfilePage> createState() => _FriendProfilePageState();
+}
+
+class _FriendProfilePageState extends State<FriendProfilePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("个人信息"),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.manage_accounts_outlined,
+            ),
+            tooltip: '设置',
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/view/image',
+                                arguments: {
+                                  "heroTag": "avatar",
+                                  "image": widget.userProfile.avatar,
+                                },
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                              child: Avatar(widget.userProfile.avatar),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Text(
+                                      widget.userProfile.nickname,
+                                      style: Theme.of(context).textTheme.headlineSmall,
+                                    ),
+                                  ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
                                     child: SingleChildScrollView(
-                                      physics: const BouncingScrollPhysics(),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: ListTile.divideTiles(
-                                          context: context,
-                                          tiles: [
-                                            SizedBox(
-                                              height: 60,
-                                              child: InkWell(
-                                                onTap: () async {
-                                                  if (await Permission.photos.request().isGranted) {
-                                                    final XFile? image = await imagePicker.pickImage(source: ImageSource.gallery);
-                                                    if (mounted) {
-                                                      if (image != null) {
-                                                        CroppedFile? croppedAvatar = await cropAvatar(image);
-                                                        if (mounted) {
-                                                          if (croppedAvatar != null) {
-                                                            await uploadAvatar(croppedAvatar);
-                                                          }
-                                                        }
-                                                      }
-                                                    }
-                                                  } else {
-                                                    if (mounted) {
-                                                      Navigator.pop(context);
-                                                      getPermissionDeniedSnackBar(context, '未获得相册访问权限');
-                                                    }
-                                                  }
-                                                },
-                                                child: const Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text('从相册选择照片'),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 60,
-                                              child: InkWell(
-                                                onTap: () async {
-                                                  if (await Permission.camera.request().isGranted) {
-                                                    final XFile? image = await imagePicker.pickImage(source: ImageSource.camera);
-                                                    if (mounted) {
-                                                      if (image != null) {
-                                                        CroppedFile? croppedAvatar = await cropAvatar(image);
-                                                        if (mounted) {
-                                                          if (croppedAvatar != null) {
-                                                            await uploadAvatar(croppedAvatar);
-                                                          }
-                                                        }
-                                                      }
-                                                    }
-                                                  } else {
-                                                    if (mounted) {
-                                                      Navigator.pop(context);
-                                                      getPermissionDeniedSnackBar(context, '未获得相机使用权限');
-                                                    }
-                                                  }
-                                                },
-                                                child: const Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text('拍照'),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 60,
-                                              child: InkWell(
-                                                onTap: () {
-                                                  Navigator.pop(context);
-                                                  Navigator.pushNamed(
-                                                    context,
-                                                    '/view/image',
-                                                    arguments: {
-                                                      "heroTag": "avatar",
-                                                      "image": widget.userProfile.avatar,
-                                                    },
-                                                  );
-                                                },
-                                                child: const Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text('查看大图'),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 60,
-                                              child: InkWell(
-                                                onTap: () {
-                                                  Navigator.pop(context);
-                                                },
-                                                child: const Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text('取消'),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ).toList(),
-                                      ),
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                      child: RoleChips(widget.userProfile.roles),
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          },
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
-                        child: Stack(
-                          children: [
-                            Avatar(widget.userProfile.avatar),
-                            Positioned(
-                              bottom: -28,
-                              right: -28,
-                              child: Container(
-                                height: 60,
-                                width: 60,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                                ),
-                              ),
                             ),
-                            Positioned(
-                              bottom: 1,
-                              right: 1,
-                              child: Icon(
-                                Icons.camera_outlined,
-                                color: Theme.of(context).colorScheme.outline.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                      Container(
+                        height: 10,
+                      ),
+                      FriendInformationCard(widget.userProfile),
+                      Container(
+                        height: 80,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    width: 1,
+                  ),
+                ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
+              width: MediaQuery.of(context).size.width,
+              height: 80,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.call_outlined,
                     ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/edit/nickname');
+                    label: const Text("音视频通话"),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.sms_outlined,
+                    ),
+                    label: const Text("发消息"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StrangerProfilePage extends StatefulWidget {
+  final BaseProfile userProfile;
+
+  const StrangerProfilePage(this.userProfile, {super.key});
+
+  @override
+  State<StrangerProfilePage> createState() => _StrangerProfilePageState();
+}
+
+class _StrangerProfilePageState extends State<StrangerProfilePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("个人信息"),
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/view/image',
+                                arguments: {
+                                  "heroTag": "avatar",
+                                  "image": widget.userProfile.avatar,
                                 },
-                                child: Row(
-                                  children: [
-                                    Text(
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                              child: Avatar(widget.userProfile.avatar),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Text(
                                       widget.userProfile.nickname,
                                       style: Theme.of(context).textTheme.headlineSmall,
                                     ),
-                                    Container(
-                                      width: 5,
+                                  ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                      child: RoleChips(widget.userProfile.roles),
                                     ),
-                                    Icon(
-                                      Icons.edit_outlined,
-                                      size: 20,
-                                      color: Theme.of(context).colorScheme.outline,
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                child: RoleChips(widget.userProfile.roles),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                      Container(
+                        height: 10,
+                      ),
+                      BaseInformationCard(widget.userProfile),
+                      Container(
+                        height: 80,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    width: 1,
+                  ),
+                ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
+              width: MediaQuery.of(context).size.width,
+              height: 80,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.person_add_alt_outlined,
                     ),
-                  ],
-                ),
-                Container(
-                  height: 10,
-                ),
-                InformationCard(widget.userProfile),
-              ],
+                    label: const Text("加好友"),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.sms_outlined,
+                    ),
+                    label: const Text("发消息"),
+                  ),
+                ],
+              ),
             ),
           ),
-        )
-      ],
+        ],
+      )
     );
   }
 }
@@ -647,10 +852,10 @@ class RoleChips extends StatelessWidget {
   }
 }
 
-class InformationCard extends StatelessWidget {
-  final UserProfile userProfile;
+class BaseInformationCard extends StatelessWidget {
+  final BaseProfile userProfile;
 
-  const InformationCard(this.userProfile, {super.key});
+  const BaseInformationCard(this.userProfile, {super.key});
 
   List<Widget> getListTiles() {
     List<Widget> listTiles = [];
@@ -697,6 +902,119 @@ class InformationCard extends StatelessWidget {
         ListTile(
           title: const Text('年级'),
           subtitle: Text(userProfile.grade!),
+        ),
+      );
+    }
+    return listTiles;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: ListTile.divideTiles(
+          context: context,
+          tiles: getListTiles(),
+        ).toList(),
+      ),
+    );
+  }
+}
+
+class FriendInformationCard extends StatefulWidget {
+  final FriendProfile userProfile;
+
+  const FriendInformationCard(this.userProfile, {super.key});
+
+  @override
+  State<FriendInformationCard> createState() => _FriendInformationCardState();
+}
+
+class _FriendInformationCardState extends State<FriendInformationCard>{
+  late String friendsGroupName = "";
+
+  @override
+  void didChangeDependencies() async{
+    super.didChangeDependencies();
+
+    Database database = await DatabaseManager().getDatabase;
+    FriendsGroupProvider friendsGroupProvider = FriendsGroupProvider(database);
+
+    friendsGroupName = (await friendsGroupProvider.getName(widget.userProfile.friendsGroupId))!;
+    setState(() {
+
+    });
+  }
+
+  List<Widget> getListTiles() {
+    List<Widget> listTiles = [];
+    listTiles.add(
+      ListTile(
+        title: const Text('账号'),
+        subtitle: Text(widget.userProfile.account),
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('UUID'),
+        subtitle: Text(widget.userProfile.uuid.toString()),
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('备注'),
+        subtitle: Text(widget.userProfile.remark == null ? "" : widget.userProfile.remark!),
+        trailing: const Icon(
+          Icons.chevron_right_outlined,
+        ),
+        onTap: (){
+
+        },
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('好友分组'),
+        subtitle: Text(friendsGroupName),
+        trailing: const Icon(
+          Icons.chevron_right_outlined,
+        ),
+        onTap: (){
+
+        },
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('性别'),
+        subtitle: Text(widget.userProfile.gender),
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('校区'),
+        subtitle: Text(widget.userProfile.campus),
+      ),
+    );
+    listTiles.add(
+      ListTile(
+        title: const Text('院系'),
+        subtitle: Text(widget.userProfile.department),
+      ),
+    );
+    if (widget.userProfile.major != null) {
+      listTiles.add(
+        ListTile(
+          title: const Text('专业'),
+          subtitle: Text(widget.userProfile.major!),
+        ),
+      );
+    }
+    if (widget.userProfile.grade != null) {
+      listTiles.add(
+        ListTile(
+          title: const Text('年级'),
+          subtitle: Text(widget.userProfile.grade!),
         ),
       );
     }
