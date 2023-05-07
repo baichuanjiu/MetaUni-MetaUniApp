@@ -132,7 +132,7 @@ class CommonMessageProvider {
 
   Future<List<CommonMessage>> getAllNotDeletedInChat(int chatId) async {
     List<CommonMessage> messages = [];
-    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "chatId=? & isDeleted=0", whereArgs: [chatId]);
+    List<Map<String, dynamic>> maps = await database.query('commonMessage', where: "chatId=? and isDeleted=0", whereArgs: [chatId]);
     if (maps.isNotEmpty) {
       for (var element in maps) {
         messages.add(CommonMessage.fromSql(element));

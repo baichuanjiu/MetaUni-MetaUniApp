@@ -120,7 +120,7 @@ class FriendshipProvider {
   }
 
   Future<Friendship?> getNotDeleted(int id) async {
-    List<Map<String, dynamic>> maps = await database.query('friendship', where: "id=? & isDeleted=0", whereArgs: [id]);
+    List<Map<String, dynamic>> maps = await database.query('friendship', where: "id=? and isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Friendship.fromSql(maps.first);
     }
@@ -140,7 +140,7 @@ class FriendshipProvider {
 
   Future<List<Friendship>> getFriendsInGroup(int friendsGroupId) async {
     List<Friendship> friends = [];
-    List<Map<String, dynamic>> maps = await database.query('friendship', where: "friendsGroupId=? & isDeleted=0", whereArgs: [friendsGroupId]);
+    List<Map<String, dynamic>> maps = await database.query('friendship', where: "friendsGroupId=? and isDeleted=0", whereArgs: [friendsGroupId]);
     if (maps.isNotEmpty) {
       for (var element in maps) {
         friends.add(Friendship.fromSql(element));
@@ -174,7 +174,7 @@ class FriendshipProviderWithTransaction {
   }
 
   Future<Friendship?> getNotDeleted(int id) async {
-    List<Map<String, dynamic>> maps = await transaction.query('friendship', where: "id=? & isDeleted=0", whereArgs: [id]);
+    List<Map<String, dynamic>> maps = await transaction.query('friendship', where: "id=? and isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Friendship.fromSql(maps.first);
     }
