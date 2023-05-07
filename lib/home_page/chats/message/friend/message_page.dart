@@ -84,7 +84,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
   late List<CommonMessage> newMessages = [];
 
-  late int historyMessagesMaxId;
+  late int historyMessagesMaxId = -1;
 
   late CommonChatStatus commonChatStatus;
 
@@ -166,6 +166,9 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
         );
         CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
         commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageSendByMe: message.id, isRead: false, readTime: null, updatedTime: message.createdTime));
+        chatTargetInformation.chatId = chatId;
+        commonChatStatus = (await commonChatStatusProviderWithTransaction.get(chatTargetInformation.chatId!))!;
+        setState(() {});
       } else {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
@@ -203,26 +206,35 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     //后续要修改，首先有可能进入该页面时还没有ChatId
 
     chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
-    BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(await DatabaseManager().getDatabase);
-    targetUserInformation = (await briefUserInformationProvider.get(chatTargetInformation.id))!;
+    database = await DatabaseManager().getDatabase;
+    targetUserInformation = BriefUserInformation(uuid: chatTargetInformation.id, avatar: chatTargetInformation.avatar, nickname: chatTargetInformation.name, updatedTime: chatTargetInformation.updatedTime);
 
     ChatProvider chatProvider = ChatProvider(database);
+    chatTargetInformation.chatId ??= await(chatProvider.getWithUser(chatTargetInformation.id));
+
     totalNumberOfUnreadMessages = BlocManager().totalNumberOfUnreadMessagesCubit.get();
-    numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
-    if (numberOfUnreadMessagesInChat > 0) {
-      WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
+    if(chatTargetInformation.chatId != null)
+    {
+      numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
+      if (numberOfUnreadMessagesInChat > 0) {
+        WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
+      }
+
+      //后续要修改 比如每次只获取X条，而并不是一次性全获取
+      CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
+      historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
+
+      if(historyMessages.isNotEmpty)
+      {
+        historyMessagesMaxId = historyMessages[0].id;
+      }
+
+      CommonChatStatusProvider commonChatStatusProvider = CommonChatStatusProvider(database);
+      commonChatStatus = (await commonChatStatusProvider.get(chatTargetInformation.chatId!))!;
+
+      setState(() {});
     }
 
-    //后续要修改 比如每次只获取X条，而并不是一次性全获取
-    CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
-    historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
-
-    historyMessagesMaxId = historyMessages[0].id;
-
-    CommonChatStatusProvider commonChatStatusProvider = CommonChatStatusProvider(database);
-    commonChatStatus = (await commonChatStatusProvider.get(chatTargetInformation.chatId!))!;
-
-    setState(() {});
   }
 
   @override
@@ -244,8 +256,17 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       child: MultiBlocListener(
           listeners: [
             BlocListener<CommonMessageCubit, CommonMessage?>(
-              listener: (context, commonMessage) {
-                if (commonMessage!.chatId == chatTargetInformation.chatId!) {
+              listener: (context, commonMessage) async{
+                if(chatTargetInformation.chatId != null){
+                  if (commonMessage!.chatId == chatTargetInformation.chatId) {
+                    receiveNewMessage(commonMessage);
+                    WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
+                  }
+                }
+                else if (chatTargetInformation.id == commonMessage!.senderId){
+                  chatTargetInformation.chatId = commonMessage.chatId;
+                  CommonChatStatusProvider commonChatStatusProvider = CommonChatStatusProvider(database);
+                  commonChatStatus = (await commonChatStatusProvider.get(chatTargetInformation.chatId!))!;
                   receiveNewMessage(commonMessage);
                   WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
                 }
@@ -253,16 +274,20 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             ),
             BlocListener<TotalNumberOfUnreadMessagesCubit, int?>(
               listener: (context, number) async {
-                ChatProvider chatProvider = ChatProvider(database);
-                numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
-                totalNumberOfUnreadMessages = number!;
+                if(chatTargetInformation.chatId != null){
+                  ChatProvider chatProvider = ChatProvider(database);
+                  numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
+                  totalNumberOfUnreadMessages = number!;
+                }
               },
             ),
             BlocListener<CommonChatStatusCubit, CommonChatStatus?>(
               listener: (context, newStatus) {
-                if (newStatus!.chatId == chatTargetInformation.chatId!) {
-                  commonChatStatus = newStatus;
-                  setState(() {});
+                if(chatTargetInformation.chatId != null){
+                  if (newStatus!.chatId == chatTargetInformation.chatId!) {
+                    commonChatStatus = newStatus;
+                    setState(() {});
+                  }
                 }
               },
             ),

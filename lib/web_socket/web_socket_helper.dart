@@ -35,7 +35,7 @@ class WebSocketHelper {
 
       int chatId = message.chatId;
       Chat? chat = await chatProviderWithTransaction.get(chatId);
-      //后续还要再修改，主要处理 未读消息数 与 消息是否已读
+
       if (chat == null) {
         chatProviderWithTransaction.insert(
           Chat(

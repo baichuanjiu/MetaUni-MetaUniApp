@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta_uni_app/models/dio_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../bloc/bloc_manager.dart';
 import '../../bloc/chat_list_tile/chat_list_tile_bloc.dart';
@@ -12,6 +15,9 @@ import '../../database/models/chat/chat.dart';
 import '../../database/models/friend/friendship.dart';
 import '../../database/models/message/common_message.dart';
 import '../../database/models/user/brief_user_information.dart';
+import '../../reusable_components/logout/logout.dart';
+import '../../reusable_components/snack_bar/network_error_snack_bar.dart';
+import '../../reusable_components/snack_bar/normal_snack_bar.dart';
 import 'chat_list_tile/chat_list_tile.dart';
 import 'chat_list_tile/models/brief_chat_target_information.dart';
 import 'chat_list_tile/models/chat_list_tile_data.dart';
@@ -45,6 +51,11 @@ class _ChatsPageState extends State<ChatsPage> {
       String? remark = await friendshipProvider.getRemark(chat.targetId);
       BriefUserInformation? info = await briefUserInformationProvider.get(chat.targetId);
 
+      if (info == null) {
+        await getBriefUserInformation(chat.targetId);
+        info = await briefUserInformationProvider.get(chat.targetId);
+      }
+
       String? messagePreview;
       DateTime? lastMessageCreatedTime;
       if (chat.lastMessageId != null) {
@@ -69,6 +80,54 @@ class _ChatsPageState extends State<ChatsPage> {
       }
     }
     return null;
+  }
+
+  getBriefUserInformation(int queryUUID) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? jwt = prefs.getString('jwt');
+    final int? uuid = prefs.getInt('uuid');
+
+    final DioModel dioModel = DioModel();
+
+    try {
+      Response response;
+      response = await dioModel.dio.get(
+        '/metaUni/userAPI/profile/brief/$queryUUID',
+        options: Options(headers: {
+          'JWT': jwt,
+          'UUID': uuid,
+        }),
+      );
+      switch (response.data['code']) {
+        case 1:
+        //Message:"使用了无效的JWT，请重新登录"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            logout(context);
+          }
+          break;
+        case 2:
+        //Message:"没有找到目标用户的个人信息"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+          }
+          break;
+        default:
+          Database database = await DatabaseManager().getDatabase;
+          BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
+          BriefUserInformation briefUserInformation = BriefUserInformation.fromJson(response.data['data']);
+          if (await briefUserInformationProvider.get(briefUserInformation.uuid) == null) {
+            briefUserInformationProvider.insert(briefUserInformation);
+          } else {
+            briefUserInformationProvider.update(briefUserInformation.toUpdateSql(), briefUserInformation.uuid);
+          }
+      }
+    } catch (e) {
+      if (mounted) {
+        getNetworkErrorSnackBar(context);
+      }
+    }
   }
 
   initChats() async {
@@ -171,7 +230,7 @@ class _ChatsPageState extends State<ChatsPage> {
                     PopupMenuItem(
                       onTap: () async {
                         await Future.delayed(Duration.zero);
-                        if(mounted){
+                        if (mounted) {
                           Navigator.pushNamed(context, '/contacts/search');
                         }
                       },

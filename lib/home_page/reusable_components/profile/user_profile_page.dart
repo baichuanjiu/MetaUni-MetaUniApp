@@ -15,6 +15,7 @@ import '../../../reusable_components/logout/logout.dart';
 import '../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../reusable_components/snack_bar/no_permission_snack_bar.dart';
 import '../../../reusable_components/snack_bar/normal_snack_bar.dart';
+import '../../chats/chat_list_tile/models/brief_chat_target_information.dart';
 import 'models/base_profile.dart';
 import 'models/friend_profile.dart';
 
@@ -84,6 +85,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
               userProfile = BaseProfile.fromJson(response.data['data']['profile']);
               isLoading = false;
               break;
+          }
+          Database database = await DatabaseManager().getDatabase;
+          BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
+          BriefUserInformation briefUserInformation = BriefUserInformation.fromJson(response.data['data']['profile']);
+          if (await briefUserInformationProvider.get(briefUserInformation.uuid) == null) {
+            briefUserInformationProvider.insert(briefUserInformation);
+          } else {
+            briefUserInformationProvider.update(briefUserInformation.toUpdateSql(), briefUserInformation.uuid);
           }
       }
     } catch (e) {
@@ -614,7 +623,20 @@ class _FriendProfilePageState extends State<FriendProfilePage> {
                     label: const Text("音视频通话"),
                   ),
                   FilledButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/chats/message/friend',
+                        arguments: BriefChatTargetInformation(
+                          chatId: null,
+                          targetType: "user",
+                          id: widget.userProfile.uuid,
+                          avatar: widget.userProfile.avatar,
+                          name: widget.userProfile.remark != null ? widget.userProfile.remark! : widget.userProfile.nickname,
+                          updatedTime: widget.userProfile.updatedTime,
+                        ),
+                      );
+                    },
                     icon: const Icon(
                       Icons.sms_outlined,
                     ),
@@ -643,119 +665,131 @@ class _StrangerProfilePageState extends State<StrangerProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("个人信息"),
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/view/image',
-                                arguments: {
-                                  "heroTag": "avatar",
-                                  "image": widget.userProfile.avatar,
-                                },
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
-                              child: Avatar(widget.userProfile.avatar),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    child: Text(
-                                      widget.userProfile.nickname,
-                                      style: Theme.of(context).textTheme.headlineSmall,
-                                    ),
-                                  ),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                      child: RoleChips(widget.userProfile.roles),
-                                    ),
-                                  ),
-                                ],
+        appBar: AppBar(
+          title: const Text("个人信息"),
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/view/image',
+                                  arguments: {
+                                    "heroTag": "avatar",
+                                    "image": widget.userProfile.avatar,
+                                  },
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                                child: Avatar(widget.userProfile.avatar),
                               ),
                             ),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      child: Text(
+                                        widget.userProfile.nickname,
+                                        style: Theme.of(context).textTheme.headlineSmall,
+                                      ),
+                                    ),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                        child: RoleChips(widget.userProfile.roles),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          height: 10,
+                        ),
+                        BaseInformationCard(widget.userProfile),
+                        Container(
+                          height: 80,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              bottom: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      width: 1,
+                    ),
+                  ),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                width: MediaQuery.of(context).size.width,
+                height: 80,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () {},
+                      icon: const Icon(
+                        Icons.person_add_alt_outlined,
+                      ),
+                      label: const Text("加好友"),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/chats/message/friend',
+                          arguments: BriefChatTargetInformation(
+                            chatId: null,
+                            targetType: "user",
+                            id: widget.userProfile.uuid,
+                            avatar: widget.userProfile.avatar,
+                            name: widget.userProfile.nickname,
+                            updatedTime: widget.userProfile.updatedTime,
                           ),
-                        ],
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.sms_outlined,
                       ),
-                      Container(
-                        height: 10,
-                      ),
-                      BaseInformationCard(widget.userProfile),
-                      Container(
-                        height: 80,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    width: 1,
-                  ),
-                ),
-                color: Theme.of(context).colorScheme.surface,
-              ),
-              width: MediaQuery.of(context).size.width,
-              height: 80,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  FilledButton.tonalIcon(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.person_add_alt_outlined,
+                      label: const Text("发消息"),
                     ),
-                    label: const Text("加好友"),
-                  ),
-                  FilledButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.sms_outlined,
-                    ),
-                    label: const Text("发消息"),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      )
-    );
+          ],
+        ));
   }
 }
 
@@ -930,20 +964,18 @@ class FriendInformationCard extends StatefulWidget {
   State<FriendInformationCard> createState() => _FriendInformationCardState();
 }
 
-class _FriendInformationCardState extends State<FriendInformationCard>{
+class _FriendInformationCardState extends State<FriendInformationCard> {
   late String friendsGroupName = "";
 
   @override
-  void didChangeDependencies() async{
+  void didChangeDependencies() async {
     super.didChangeDependencies();
 
     Database database = await DatabaseManager().getDatabase;
     FriendsGroupProvider friendsGroupProvider = FriendsGroupProvider(database);
 
     friendsGroupName = (await friendsGroupProvider.getName(widget.userProfile.friendsGroupId))!;
-    setState(() {
-
-    });
+    setState(() {});
   }
 
   List<Widget> getListTiles() {
@@ -967,9 +999,7 @@ class _FriendInformationCardState extends State<FriendInformationCard>{
         trailing: const Icon(
           Icons.chevron_right_outlined,
         ),
-        onTap: (){
-
-        },
+        onTap: () {},
       ),
     );
     listTiles.add(
@@ -979,9 +1009,7 @@ class _FriendInformationCardState extends State<FriendInformationCard>{
         trailing: const Icon(
           Icons.chevron_right_outlined,
         ),
-        onTap: (){
-
-        },
+        onTap: () {},
       ),
     );
     listTiles.add(

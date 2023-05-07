@@ -109,6 +109,14 @@ class ChatProvider {
     return null;
   }
 
+  Future<int?> getWithUser(int targetId) async {
+    List<Map<String, dynamic>> maps = await database.query('chat',columns: ["id"], where: "targetId=? and isWithOtherUser=1", whereArgs: [targetId]);
+    if (maps.isNotEmpty) {
+      return maps.first["id"];
+    }
+    return null;
+  }
+
   Future<List<Chat>> getAll() async {
     List<Chat> chats = [];
     List<Map<String, dynamic>> maps = await database.query('chat');
@@ -121,7 +129,7 @@ class ChatProvider {
   }
 
   Future<Chat?> getNotDeleted(int id) async {
-    List<Map<String, dynamic>> maps = await database.query('chat', where: "id=? & isDeleted=0", whereArgs: [id]);
+    List<Map<String, dynamic>> maps = await database.query('chat', where: "id=? and isDeleted=0", whereArgs: [id]);
     if (maps.isNotEmpty) {
       return Chat.fromSql(maps.first);
     }
@@ -148,13 +156,13 @@ class ChatProvider {
     return number;
   }
 
-  Future<int> getNumberOfUnreadMessages(int id) async{
-    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+  Future<int> getNumberOfUnreadMessages(int id) async {
+    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?", whereArgs: [id]);
     return maps.first["numberOfUnreadMessages"];
   }
 
   Future<int> readMessages(int id) async {
-    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+    List<Map<String, dynamic>> maps = await database.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?", whereArgs: [id]);
     int numberOfUnreadMessages = maps.first["numberOfUnreadMessages"];
     await database.update(
         'chat',
@@ -191,7 +199,7 @@ class ChatProviderWithTransaction {
   }
 
   Future<int> readMessages(int id) async {
-    List<Map<String, dynamic>> maps = await transaction.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?",whereArgs: [id]);
+    List<Map<String, dynamic>> maps = await transaction.query('chat', columns: ["numberOfUnreadMessages"], where: "id=?", whereArgs: [id]);
     int numberOfUnreadMessages = maps.first["numberOfUnreadMessages"];
     await transaction.update(
         'chat',

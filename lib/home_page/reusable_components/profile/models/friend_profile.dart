@@ -11,8 +11,9 @@ class FriendProfile{
   late String department;
   late String? major;
   late String? grade;
+  late DateTime updatedTime;
 
-  FriendProfile(this.uuid, this.account, this.roles, this.gender, this.nickname, this.remark, this.avatar, this.friendsGroupId, this.campus, this.department, this.major, this.grade);
+  FriendProfile(this.uuid, this.account, this.roles, this.gender, this.nickname, this.remark, this.avatar, this.friendsGroupId, this.campus, this.department, this.major, this.grade, this.updatedTime);
 
   FriendProfile.fromJson(Map<String, dynamic> map) {
     uuid = map['uuid'];
@@ -31,6 +32,7 @@ class FriendProfile{
     department = map['department'];
     major = map['major'];
     grade = map['grade'];
+    updatedTime = DateTime.parse(map['updatedTime']);
   }
 
 }
