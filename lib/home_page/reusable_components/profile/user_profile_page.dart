@@ -758,7 +758,18 @@ class _StrangerProfilePageState extends State<StrangerProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/contacts/add/friend',
+                          arguments: BriefUserInformation(
+                            uuid: widget.userProfile.uuid,
+                            avatar: widget.userProfile.avatar,
+                            nickname: widget.userProfile.nickname,
+                            updatedTime: widget.userProfile.updatedTime,
+                          ),
+                        );
+                      },
                       icon: const Icon(
                         Icons.person_add_alt_outlined,
                       ),

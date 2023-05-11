@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:meta_uni_app/home_page/chats/contacts/search/add_friend_request_page.dart';
 import 'package:meta_uni_app/home_page/chats/contacts/search/user_search_result_page.dart';
 import 'home_page/chats/contacts/contacts_page.dart';
 import 'home_page/chats/contacts/search/contacts_search_page.dart';
@@ -139,6 +140,7 @@ class _MetaUni extends State<MetaUni> {
                   '/contacts': (context) => const ContactsPage(),
                   '/contacts/search': (context) => const ContactsSearchPage(),
                   '/contacts/search/result/user': (context) => const UserSearchResultPage(),
+                  '/contacts/add/friend': (context) => const AddFriendRequestPage(),
                   '/discover/warehouse/search': (context) => const DiscoverWarehouseSearchPage(),
                   '/user/profile': (context) => const UserProfilePage(),
                   '/settings': (context) => const SettingsPage(),
