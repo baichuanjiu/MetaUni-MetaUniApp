@@ -69,6 +69,20 @@ class _AddFriendRequestPageState extends State<AddFriendRequestPage> {
           }
           break;
         case 2:
+        //Message:"您正在尝试添加不存在的用户为好友"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            Navigator.pop(context);
+          }
+          break;
+        case 3:
+        //Message:"您正在尝试使用一个不存在的好友分组"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            Navigator.pop(context);
+          }
+          break;
+        case 4:
         //Message:"你们已经是好友了"
           if (mounted) {
             getNormalSnackBar(context, response.data['message']);
@@ -161,102 +175,111 @@ class _AddFriendRequestPageState extends State<AddFriendRequestPage> {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+                      padding: const EdgeInsets.fromLTRB(0, 5, 0, 5),
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ListTile(
                             leading: Avatar(targetUser.avatar),
                             title: Text(targetUser.nickname),
                           ),
                           Container(
-                            height: 20,
-                          ),
-                          const Text("填写验证信息："),
-                          Container(
-                            height: 5,
-                          ),
-                          TextField(
-                            focusNode: messageTextFocusNode,
-                            controller: messageTextController,
-                            decoration: const InputDecoration(
-                              filled: true,
-                              border: OutlineInputBorder(borderSide: BorderSide.none),
-                              contentPadding: EdgeInsets.fromLTRB(10, 10, 0, 10),
-                              hintText: "验证信息",
-                            ),
-                            autofocus: true,
-                            maxLength: 30,
-                            maxLines: null,
-                            keyboardType: TextInputType.multiline,
-                            onTapOutside: (value) {
-                              messageTextFocusNode.unfocus();
-                            },
-                          ),
-                          Container(
-                            height: 20,
-                          ),
-                          const Text("设置备注与分组："),
-                          Container(
-                            height: 5,
-                          ),
-                          TextField(
-                            focusNode: remarkFocusNode,
-                            controller: remarkController,
-                            decoration: InputDecoration(
-                              border: const OutlineInputBorder(borderSide: BorderSide.none),
-                              contentPadding: const EdgeInsets.fromLTRB(10, 10, 0, 10),
-                              prefixIcon: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
-                                    child: Text(
-                                      "备注：",
-                                      style: Theme.of(context).textTheme.bodyLarge,
+                            padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  height: 20,
+                                ),
+                                const Text("填写验证信息："),
+                                Container(
+                                  height: 5,
+                                ),
+                                TextField(
+                                  focusNode: messageTextFocusNode,
+                                  controller: messageTextController,
+                                  decoration: const InputDecoration(
+                                    filled: true,
+                                    border: OutlineInputBorder(borderSide: BorderSide.none),
+                                    contentPadding: EdgeInsets.fromLTRB(10, 10, 0, 10),
+                                    hintText: "验证信息",
+                                  ),
+                                  autofocus: true,
+                                  maxLength: 30,
+                                  maxLines: null,
+                                  keyboardType: TextInputType.multiline,
+                                  textInputAction: TextInputAction.next,
+                                  onTapOutside: (value) {
+                                    messageTextFocusNode.unfocus();
+                                  },
+                                ),
+                                Container(
+                                  height: 20,
+                                ),
+                                const Text("设置备注与分组："),
+                                Container(
+                                  height: 5,
+                                ),
+                                TextField(
+                                  focusNode: remarkFocusNode,
+                                  controller: remarkController,
+                                  decoration: InputDecoration(
+                                    border: const OutlineInputBorder(borderSide: BorderSide.none),
+                                    contentPadding: const EdgeInsets.fromLTRB(10, 10, 0, 10),
+                                    prefixIcon: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
+                                          child: Text(
+                                            "备注：",
+                                            style: Theme.of(context).textTheme.bodyLarge,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            inputFormatters: [
-                              //只允许输入最多15个字符
-                              LengthLimitingTextInputFormatter(15),
-                            ],
-                            keyboardType: TextInputType.multiline,
-                            onTapOutside: (value) {
-                              remarkFocusNode.unfocus();
-                            },
-                          ),
-                          ListTile(
-                            title: Text(
-                              currentChosenGroupName,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            trailing: const Icon(
-                              Icons.chevron_right_outlined,
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChooseFriendsGroupPage(
-                                    currentChosenGroupId: currentChosenGroupId,
-                                  ),
+                                  inputFormatters: [
+                                    //只允许输入最多15个字符
+                                    LengthLimitingTextInputFormatter(15),
+                                  ],
+                                  keyboardType: TextInputType.multiline,
+                                  textInputAction: TextInputAction.done,
+                                  onTapOutside: (value) {
+                                    remarkFocusNode.unfocus();
+                                  },
                                 ),
-                              ).then(
-                                (value) async {
-                                  if (value != null) {
-                                    currentChosenGroupId = value[0];
-                                    currentChosenGroupName = (await friendsGroupProvider.getName(currentChosenGroupId))!;
-                                    setState(() {});
-                                  }
-                                },
-                              );
-                            },
+                                ListTile(
+                                  title: Text(
+                                    currentChosenGroupName,
+                                    style: Theme.of(context).textTheme.bodyLarge,
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_right_outlined,
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ChooseFriendsGroupPage(
+                                          currentChosenGroupId: currentChosenGroupId,
+                                        ),
+                                      ),
+                                    ).then(
+                                          (value) async {
+                                        if (value != null) {
+                                          currentChosenGroupId = value[0];
+                                          currentChosenGroupName = (await friendsGroupProvider.getName(currentChosenGroupId))!;
+                                          setState(() {});
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
