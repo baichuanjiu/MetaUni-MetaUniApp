@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta_uni_app/home_page/chats/contacts/reusable_components/receive_add_friend_request/receive_add_friend_request_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../bloc/bloc_manager.dart';
@@ -175,7 +176,14 @@ class _ContactsPageState extends State<ContactsPage> {
                                     trailing: const Icon(
                                       Icons.chevron_right_outlined,
                                     ),
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const ReceiveAddFriendRequestPage(),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   ListTile(
                                     title: const Text('群通知'),
