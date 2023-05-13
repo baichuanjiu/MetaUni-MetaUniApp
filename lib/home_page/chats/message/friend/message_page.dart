@@ -125,7 +125,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             break;
           default:
             CommonMessage message = CommonMessage.fromJson(response.data['data']);
-            storeNewMessage(message);
+            await storeNewMessage(message);
             BlocManager().chatListTileDataCubit.shouldUpdate(ChatListTileUpdateData(chatId: message.chatId));
             setState(() {
               newMessages.add(message);
@@ -142,13 +142,14 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
     }
   }
 
-  void storeNewMessage(CommonMessage message) async {
+  storeNewMessage(CommonMessage message) async {
     await database.transaction((transaction) async {
       CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
 
       commonMessageProviderWithTransaction.insert(message);
 
       ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
+      CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
 
       int chatId = message.chatId;
       Chat? chat = await chatProviderWithTransaction.get(chatId);
@@ -164,11 +165,11 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             updatedTime: message.createdTime,
           ),
         );
-        CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
-        commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageSendByMe: message.id, isRead: false, readTime: null, updatedTime: message.createdTime));
+        commonChatStatusProviderWithTransaction.insert(
+          CommonChatStatus(chatId: chatId, lastMessageBeReadSendByMe: null, readTime: null, updatedTime: message.createdTime),
+        );
         chatTargetInformation.chatId = chatId;
         commonChatStatus = (await commonChatStatusProviderWithTransaction.get(chatTargetInformation.chatId!))!;
-        setState(() {});
       } else {
         chatProviderWithTransaction.update({
           'isDeleted': 0,
@@ -207,14 +208,14 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
     chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     database = await DatabaseManager().getDatabase;
-    targetUserInformation = BriefUserInformation(uuid: chatTargetInformation.id, avatar: chatTargetInformation.avatar, nickname: chatTargetInformation.name, updatedTime: chatTargetInformation.updatedTime);
+    targetUserInformation =
+        BriefUserInformation(uuid: chatTargetInformation.id, avatar: chatTargetInformation.avatar, nickname: chatTargetInformation.name, updatedTime: chatTargetInformation.updatedTime);
 
     ChatProvider chatProvider = ChatProvider(database);
-    chatTargetInformation.chatId ??= await(chatProvider.getWithUser(chatTargetInformation.id));
+    chatTargetInformation.chatId ??= await (chatProvider.getWithUser(chatTargetInformation.id));
 
     totalNumberOfUnreadMessages = BlocManager().totalNumberOfUnreadMessagesCubit.get();
-    if(chatTargetInformation.chatId != null)
-    {
+    if (chatTargetInformation.chatId != null) {
       numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
       if (numberOfUnreadMessagesInChat > 0) {
         WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
@@ -224,8 +225,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       CommonMessageProvider commonMessageProvider = CommonMessageProvider(database);
       historyMessages = (await commonMessageProvider.getAllNotDeletedInChat(chatTargetInformation.chatId!)).reversed.toList();
 
-      if(historyMessages.isNotEmpty)
-      {
+      if (historyMessages.isNotEmpty) {
         historyMessagesMaxId = historyMessages[0].id;
       }
 
@@ -234,7 +234,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
       setState(() {});
     }
-
   }
 
   @override
@@ -256,14 +255,13 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
       child: MultiBlocListener(
           listeners: [
             BlocListener<CommonMessageCubit, CommonMessage?>(
-              listener: (context, commonMessage) async{
-                if(chatTargetInformation.chatId != null){
+              listener: (context, commonMessage) async {
+                if (chatTargetInformation.chatId != null) {
                   if (commonMessage!.chatId == chatTargetInformation.chatId) {
                     receiveNewMessage(commonMessage);
                     WebSocketChannel().sendReadMessagesRequestData(chatTargetInformation.chatId!);
                   }
-                }
-                else if (chatTargetInformation.id == commonMessage!.senderId){
+                } else if (chatTargetInformation.id == commonMessage!.senderId) {
                   chatTargetInformation.chatId = commonMessage.chatId;
                   CommonChatStatusProvider commonChatStatusProvider = CommonChatStatusProvider(database);
                   commonChatStatus = (await commonChatStatusProvider.get(chatTargetInformation.chatId!))!;
@@ -274,7 +272,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             ),
             BlocListener<TotalNumberOfUnreadMessagesCubit, int?>(
               listener: (context, number) async {
-                if(chatTargetInformation.chatId != null){
+                if (chatTargetInformation.chatId != null) {
                   ChatProvider chatProvider = ChatProvider(database);
                   numberOfUnreadMessagesInChat = await chatProvider.getNumberOfUnreadMessages(chatTargetInformation.chatId!);
                   totalNumberOfUnreadMessages = number!;
@@ -283,7 +281,7 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
             ),
             BlocListener<CommonChatStatusCubit, CommonChatStatus?>(
               listener: (context, newStatus) {
-                if(chatTargetInformation.chatId != null){
+                if (chatTargetInformation.chatId != null) {
                   if (newStatus!.chatId == chatTargetInformation.chatId!) {
                     commonChatStatus = newStatus;
                     setState(() {});
@@ -364,21 +362,21 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                       slivers: [
                                         SliverList(
                                           delegate: SliverChildBuilderDelegate(
-                                                (context, index) {
+                                            (context, index) {
                                               bool isSentByMe;
                                               if (newMessages[index].senderId == uuid) {
                                                 isSentByMe = true;
                                               } else {
                                                 isSentByMe = false;
                                               }
-                                              if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! > historyMessagesMaxId) {
-                                                if(commonChatStatus.lastMessageSendByMe == newMessages[index].id && commonChatStatus.isRead!){
+                                              if (commonChatStatus.lastMessageBeReadSendByMe != null && commonChatStatus.lastMessageBeReadSendByMe! > historyMessagesMaxId) {
+                                                if (commonChatStatus.lastMessageBeReadSendByMe == newMessages[index].id) {
                                                   return CommonMessageBubble(
                                                     isSentByMe: isSentByMe,
                                                     bubbleHelper: bubbleHelper,
                                                     sender: isSentByMe ? me : targetUserInformation,
                                                     message: newMessages[index],
-                                                    isRead: commonChatStatus.isRead!,
+                                                    isRead: true,
                                                     readTime: commonChatStatus.readTime!,
                                                   );
                                                 }
@@ -399,21 +397,21 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
                                         ),
                                         SliverList(
                                           delegate: SliverChildBuilderDelegate(
-                                                (context, index) {
+                                            (context, index) {
                                               bool isSentByMe;
                                               if (historyMessages[index].senderId == uuid) {
                                                 isSentByMe = true;
                                               } else {
                                                 isSentByMe = false;
                                               }
-                                              if (commonChatStatus.lastMessageSendByMe != null && commonChatStatus.lastMessageSendByMe! <= historyMessagesMaxId) {
-                                                if(commonChatStatus.lastMessageSendByMe == historyMessages[index].id && commonChatStatus.isRead!){
+                                              if (commonChatStatus.lastMessageBeReadSendByMe != null && commonChatStatus.lastMessageBeReadSendByMe! <= historyMessagesMaxId) {
+                                                if (commonChatStatus.lastMessageBeReadSendByMe == historyMessages[index].id) {
                                                   return CommonMessageBubble(
                                                     isSentByMe: isSentByMe,
                                                     bubbleHelper: bubbleHelper,
                                                     sender: isSentByMe ? me : targetUserInformation,
                                                     message: historyMessages[index],
-                                                    isRead: commonChatStatus.isRead!,
+                                                    isRead: true,
                                                     readTime: commonChatStatus.readTime!,
                                                   );
                                                 }

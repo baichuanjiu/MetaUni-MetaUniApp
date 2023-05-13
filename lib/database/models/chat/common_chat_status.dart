@@ -2,23 +2,20 @@ import 'package:sqflite/sqflite.dart';
 
 class CommonChatStatus {
   late int chatId; //主键，同时也是逻辑外键，与Chat表关联
-  late int? lastMessageSendByMe; //最后一条由我（Chat持有者）发送的消息的MessageId
-  late bool? isRead; //对方（Chat中的Target）是否已读我（Chat持有者）发送的最后一条消息
+  late int? lastMessageBeReadSendByMe; //最后一条由我（Chat持有者）发送的且被对方已读的消息的MessageId
   late DateTime? readTime; //已读时间
   late DateTime updatedTime; //状态最后一次更新的时间
 
   CommonChatStatus({
     required this.chatId,
-    required this.lastMessageSendByMe,
-    required this.isRead,
+    required this.lastMessageBeReadSendByMe,
     required this.readTime,
     required this.updatedTime,
   });
 
   CommonChatStatus.fromJson(Map<String, dynamic> map) {
     chatId = map['chatId'];
-    lastMessageSendByMe = map['lastMessageSendByMe'];
-    isRead = map['isRead'];
+    lastMessageBeReadSendByMe = map['lastMessageBeReadSendByMe'];
     readTime = map['readTime'] == null ? null : DateTime.parse(map['readTime']);
     updatedTime = DateTime.parse(map['updatedTime']);
   }
@@ -26,12 +23,7 @@ class CommonChatStatus {
   Map<String, dynamic> toSql() {
     return {
       'chatId': chatId,
-      'lastMessageSendByMe': lastMessageSendByMe,
-      'isRead': isRead == null
-          ? null
-          : isRead!
-              ? 1
-              : 0,
+      'lastMessageBeReadSendByMe': lastMessageBeReadSendByMe,
       'readTime': readTime?.millisecondsSinceEpoch,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
@@ -39,12 +31,7 @@ class CommonChatStatus {
 
   Map<String, dynamic> toUpdateSql() {
     return {
-      'lastMessageSendByMe': lastMessageSendByMe,
-      'isRead': isRead == null
-          ? null
-          : isRead!
-              ? 1
-              : 0,
+      'lastMessageBeReadSendByMe': lastMessageBeReadSendByMe,
       'readTime': readTime?.millisecondsSinceEpoch,
       'updatedTime': updatedTime.millisecondsSinceEpoch,
     };
@@ -52,8 +39,7 @@ class CommonChatStatus {
 
   CommonChatStatus.fromSql(Map<String, dynamic> map) {
     chatId = map['chatId'];
-    lastMessageSendByMe = map['lastMessageSendByMe'];
-    isRead = map['isRead'] == null ? null : map['isRead'] > 0;
+    lastMessageBeReadSendByMe = map['lastMessageBeReadSendByMe'];
     readTime = map['readTime'] == null ? null : DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
     updatedTime = DateTime.fromMillisecondsSinceEpoch(map['updatedTime']);
   }
