@@ -1,10 +1,16 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lpinyin/lpinyin.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../database/database_manager.dart';
 import '../../../../database/models/friend/friendship.dart';
 import '../../../../database/models/user/brief_user_information.dart';
+import '../../../../models/dio_model.dart';
+import '../../../../reusable_components/logout/logout.dart';
+import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
+import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
 import '../reusable_components/friend/friend_list_tile.dart';
 import '../reusable_components/friend/models/friend_list_tile_data.dart';
 
@@ -15,7 +21,7 @@ class FriendsPage extends StatefulWidget {
   State<FriendsPage> createState() => _FriendsPageState();
 }
 
-class _FriendsPageState extends State<FriendsPage>{
+class _FriendsPageState extends State<FriendsPage> {
   List<FriendListTileData> friends = [];
   Map<String, List<FriendListTile>> indexMap = {
     'A': [],
@@ -50,26 +56,80 @@ class _FriendsPageState extends State<FriendsPage>{
   double indexHeight = 16;
   double labelHeight = 24;
 
-  _performInitActions() async{
+  _performInitActions() async {
     await initFriends();
     initFriendListTiles();
     computeIndexPositions();
     initAsideIndexBar();
-    setState(() {
-
-    });
+    setState(() {});
   }
 
-  initFriends() async{
+  getBriefUserInformation(int queryUUID) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? jwt = prefs.getString('jwt');
+    final int? uuid = prefs.getInt('uuid');
+
+    final DioModel dioModel = DioModel();
+
+    try {
+      Response response;
+      response = await dioModel.dio.get(
+        '/metaUni/userAPI/profile/brief/$queryUUID',
+        options: Options(headers: {
+          'JWT': jwt,
+          'UUID': uuid,
+        }),
+      );
+      switch (response.data['code']) {
+        case 1:
+          //Message:"使用了无效的JWT，请重新登录"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            logout(context);
+          }
+          break;
+        case 2:
+          //Message:"没有找到目标用户的个人信息"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+          }
+          break;
+        default:
+          Database database = await DatabaseManager().getDatabase;
+          BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
+          BriefUserInformation briefUserInformation = BriefUserInformation.fromJson(response.data['data']);
+          if (await briefUserInformationProvider.get(briefUserInformation.uuid) == null) {
+            briefUserInformationProvider.insert(briefUserInformation);
+          } else {
+            briefUserInformationProvider.update(briefUserInformation.toUpdateSql(), briefUserInformation.uuid);
+          }
+      }
+    } catch (e) {
+      if (mounted) {
+        getNetworkErrorSnackBar(context);
+      }
+    }
+  }
+
+  initFriends() async {
     Database database = await DatabaseManager().getDatabase;
     FriendshipProvider friendShipProvider = FriendshipProvider(database);
     BriefUserInformationProvider briefUserInformationProvider = BriefUserInformationProvider(database);
 
     List<Friendship> friendShips = await friendShipProvider.getAllNotDeleted();
-    for(var friendShip in friendShips){
+    for (var friendShip in friendShips) {
       BriefUserInformation? info = await briefUserInformationProvider.get(friendShip.friendId);
-      if(info != null){
-        friends.add(FriendListTileData(friendShip.friendId, info.avatar, friendShip.remark??info.nickname));
+      if (info == null) {
+        await getBriefUserInformation(friendShip.friendId);
+        info = await briefUserInformationProvider.get(friendShip.friendId);
+        friends.add(
+          FriendListTileData(friendShip.friendId, info!.avatar, friendShip.remark ?? info.nickname),
+        );
+      } else {
+        friends.add(
+          FriendListTileData(friendShip.friendId, info.avatar, friendShip.remark ?? info.nickname),
+        );
       }
     }
   }
@@ -178,112 +238,115 @@ class _FriendsPageState extends State<FriendsPage>{
               if (snapshot.hasError) {
                 return const LoadingPage();
               }
-              return friends.isEmpty?
-              Center(
-                child: Text('还未添加任何好友呢！',style: Theme.of(context).textTheme.bodyLarge,),
-              )
-                  :Stack(
-                children: [
-                  CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverOverlapInjector(
-                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              return friends.isEmpty
+                  ? Center(
+                      child: Text(
+                        '还未添加任何好友呢！',
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                              (BuildContext context, int index) {
-                            String key = indexMap.keys.toList()[index];
-                            if (indexMap[key]!.isNotEmpty) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: labelHeight,
-                                    padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                                    color: Theme.of(context).colorScheme.surfaceVariant,
-                                    child: Row(
+                    )
+                  : Stack(
+                      children: [
+                        CustomScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          slivers: [
+                            SliverOverlapInjector(
+                              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                            ),
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (BuildContext context, int index) {
+                                  String key = indexMap.keys.toList()[index];
+                                  if (indexMap[key]!.isNotEmpty) {
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          key,
-                                          style: Theme.of(context).textTheme.labelLarge!.apply(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                        Container(
+                                          height: labelHeight,
+                                          padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                                          color: Theme.of(context).colorScheme.surfaceVariant,
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                key,
+                                                style: Theme.of(context).textTheme.labelLarge!.apply(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                              ),
+                                            ],
+                                          ),
                                         ),
+                                        ...indexMap[key]!,
+                                      ],
+                                    );
+                                  }
+                                  return Container();
+                                },
+                                childCount: indexMap.length,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Positioned(
+                          bottom: 500 - (indexHeight * (index.length + 1)),
+                          right: 0,
+                          child: SizedBox(
+                            height: (indexList.length + 2) * indexHeight,
+                            width: 78,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 50,
+                                  child: Stack(
+                                    alignment: AlignmentDirectional.center,
+                                    children: [
+                                      currentIndex == 0
+                                          ? Container()
+                                          : Positioned(
+                                              top: indexHeight * currentIndex - indexHeight,
+                                              child: IndexBubble(index[currentIndex - 1], indexHeight),
+                                            ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 28,
+                                  child: GestureDetector(
+                                    onVerticalDragStart: (details) {
+                                      double position = details.localPosition.dy;
+                                      jumpToIndex((position) ~/ indexHeight);
+                                    },
+                                    onVerticalDragUpdate: (details) {
+                                      double position = details.localPosition.dy;
+                                      jumpToIndex((position) ~/ indexHeight);
+                                    },
+                                    onVerticalDragEnd: (details) {
+                                      setState(() {
+                                        currentIndex = 0;
+                                      });
+                                    },
+                                    child: Column(
+                                      children: [
+                                        SizedBox(
+                                          height: indexHeight,
+                                          width: 28,
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.search_outlined,
+                                              size: 12,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        ...indexList,
                                       ],
                                     ),
                                   ),
-                                  ...indexMap[key]!,
-                                ],
-                              );
-                            }
-                            return Container();
-                          },
-                          childCount: indexMap.length,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    bottom: 500 - (indexHeight * (index.length + 1)),
-                    right: 0,
-                    child: SizedBox(
-                      height: (indexList.length + 2) * indexHeight,
-                      width: 78,
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 50,
-                            child: Stack(
-                              alignment: AlignmentDirectional.center,
-                              children: [
-                                currentIndex == 0
-                                    ? Container()
-                                    : Positioned(
-                                  top: indexHeight * currentIndex - indexHeight,
-                                  child: IndexBubble(index[currentIndex - 1], indexHeight),
-                                ),
+                                )
                               ],
                             ),
                           ),
-                          SizedBox(
-                            width: 28,
-                            child: GestureDetector(
-                              onVerticalDragStart: (details) {
-                                double position = details.localPosition.dy;
-                                jumpToIndex((position) ~/ indexHeight);
-                              },
-                              onVerticalDragUpdate: (details) {
-                                double position = details.localPosition.dy;
-                                jumpToIndex((position) ~/ indexHeight);
-                              },
-                              onVerticalDragEnd: (details) {
-                                setState(() {
-                                  currentIndex = 0;
-                                });
-                              },
-                              child: Column(
-                                children: [
-                                  SizedBox(
-                                    height: indexHeight,
-                                    width: 28,
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.search_outlined,
-                                        size: 12,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                  ...indexList,
-                                ],
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
+                        ),
+                      ],
+                    );
             default:
               return const LoadingPage();
           }
