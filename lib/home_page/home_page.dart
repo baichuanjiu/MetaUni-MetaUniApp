@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
+import 'package:meta_uni_app/bloc/contacts/has_unread_add_friend_request_bloc.dart';
 import 'package:meta_uni_app/bloc/message/total_number_of_unread_messages_bloc.dart';
 import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
+import '../bloc/chat_list_tile/chat_list_tile_bloc.dart';
 import '../bloc/message/common_message_bloc.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
@@ -57,6 +59,7 @@ class _HomePageState extends State<HomePage> {
     final int? uuid = prefs.getInt('uuid');
     UserSyncTable? userSyncTable = await userSyncTableProvider.get(uuid!);
 
+    checkHasUnreadAddFriendRequest();
     syncFriendsGroups(userSyncTable!.updatedTimeForFriendsGroups);
     syncFriendships(userSyncTable.updatedTimeForFriendships);
     await syncChats(userSyncTable.updatedTimeForChats);
@@ -65,6 +68,39 @@ class _HomePageState extends State<HomePage> {
   }
 
   final DioModel dioModel = DioModel();
+
+  checkHasUnreadAddFriendRequest()async{
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? jwt = prefs.getString('jwt');
+    final int? uuid = prefs.getInt('uuid');
+
+    try {
+      Response response;
+      response = await dioModel.dio.get(
+        '/metaUni/userAPI/friendship/request/hasUnread',
+        options: Options(headers: {
+          'JWT': jwt,
+          'UUID': uuid,
+        }),
+      );
+      switch (response.data['code']) {
+        case 1:
+        //Message:"使用了无效的JWT，请重新登录"
+          if (mounted) {
+            getNormalSnackBar(context, response.data['message']);
+            logout(context);
+          }
+          break;
+        default:
+          BlocManager().hasUnreadAddFriendRequestCubit.update(response.data['data']);
+      }
+    } catch (e) {
+      if (mounted) {
+        getNetworkErrorSnackBar(context);
+      }
+    }
+  }
 
   syncFriendsGroups(DateTime updatedTimeForFriendsGroups) async {
     final prefs = await SharedPreferences.getInstance();
@@ -284,7 +320,7 @@ class _HomePageState extends State<HomePage> {
       );
       switch (response.data['code']) {
         case 1:
-        //Message:"使用了无效的JWT，请重新登录"
+          //Message:"使用了无效的JWT，请重新登录"
           if (mounted) {
             getNormalSnackBar(context, response.data['message']);
             logout(context);
@@ -320,7 +356,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  updateTotalNumberOfUnreadMessages() async{
+  updateTotalNumberOfUnreadMessages() async {
     Database database = await DatabaseManager().getDatabase;
     ChatProvider chatProvider = ChatProvider(database);
 
@@ -360,75 +396,78 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-        providers: [
-          BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
-          BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
-        ],
-        child: Scaffold(
-          body: Center(
-            child: _widgetOptions.elementAt(currentPageIndex),
-          ),
-          bottomNavigationBar: NavigationBar(
-            onDestinationSelected: (int index) {
-              setState(() {
-                currentPageIndex = index;
-              });
-            },
-            selectedIndex: currentPageIndex,
-            destinations: <Widget>[
-              NavigationDestination(
-                selectedIcon: Icon(
-                  Icons.interests,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                icon: Icon(
-                  Icons.interests_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                label: '发现',
+      providers: [
+        BlocProvider<CommonMessageCubit>.value(value: BlocManager().commonMessageCubit),
+        BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
+        BlocProvider<ChatListTileCubit>.value(value: BlocManager().chatListTileDataCubit),
+        BlocProvider<HasUnreadAddFriendRequestCubit>.value(value: BlocManager().hasUnreadAddFriendRequestCubit),
+      ],
+      child: Scaffold(
+        body: Center(
+          child: _widgetOptions.elementAt(currentPageIndex),
+        ),
+        bottomNavigationBar: NavigationBar(
+          onDestinationSelected: (int index) {
+            setState(() {
+              currentPageIndex = index;
+            });
+          },
+          selectedIndex: currentPageIndex,
+          destinations: <Widget>[
+            NavigationDestination(
+              selectedIcon: Icon(
+                Icons.interests,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
-              BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
-                builder: (context, number) => NavigationDestination(
-                  selectedIcon: number == 0
-                      ? Icon(
+              icon: Icon(
+                Icons.interests_outlined,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: '发现',
+            ),
+            BlocBuilder<TotalNumberOfUnreadMessagesCubit, int>(
+              builder: (context, number) => NavigationDestination(
+                selectedIcon: number == 0
+                    ? Icon(
+                        Icons.sms,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      )
+                    : Badge(
+                        label: Text(number > 99 ? "99+" : number.toString()),
+                        child: Icon(
                           Icons.sms,
                           color: Theme.of(context).colorScheme.onSecondaryContainer,
-                        )
-                      : Badge(
-                          label: Text(number > 99 ? "99+" : number.toString()),
-                          child: Icon(
-                            Icons.sms,
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
-                          ),
                         ),
-                  icon: number == 0
-                      ? Icon(
+                      ),
+                icon: number == 0
+                    ? Icon(
+                        Icons.sms_outlined,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      )
+                    : Badge(
+                        label: Text(number > 99 ? "99+" : number.toString()),
+                        child: Icon(
                           Icons.sms_outlined,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        )
-                      : Badge(
-                          label: Text(number > 99 ? "99+" : number.toString()),
-                          child: Icon(
-                            Icons.sms_outlined,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
                         ),
-                  label: '消息',
-                ),
+                      ),
+                label: '消息',
               ),
-              NavigationDestination(
-                selectedIcon: Icon(
-                  Icons.account_circle,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                icon: Icon(
-                  Icons.account_circle_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                label: '我的',
+            ),
+            NavigationDestination(
+              selectedIcon: Icon(
+                Icons.account_circle,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
-            ],
-          ),
-        ));
+              icon: Icon(
+                Icons.account_circle_outlined,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: '我的',
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
