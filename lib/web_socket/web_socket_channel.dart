@@ -6,6 +6,7 @@ import 'package:meta_uni_app/web_socket/models/read_messages_request_data.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
 import '../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
+import '../database/models/friend/friendship.dart';
 
 //单例模式构建webSocket
 class WebSocketChannel {
@@ -53,8 +54,18 @@ class WebSocketChannel {
             ChatListTileUpdateData(chatId: commonMessage.chatId),
           );
           break;
+        case "NewAddFriendRequest":
+          _blocManager.hasUnreadAddFriendRequestCubit.update(true);
+          break;
+        case "NewFriendship":
+          Friendship friendship = Friendship.fromJson(
+            map["data"],
+          );
+          _webSocketHelper.storeNewFriendship(friendship);
+          break;
       }
     }, onDone: () {
+      //initChannel(webSocketHelper, blocManager);
       print("掉线了");
     });
   }

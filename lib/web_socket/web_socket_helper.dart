@@ -3,6 +3,7 @@ import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
+import '../database/models/friend/friendship.dart';
 import '../database/models/message/common_message.dart';
 
 //单例模式构建webSocketHelper
@@ -26,61 +27,73 @@ class WebSocketHelper {
   }
 
   void storeNewCommonMessage(CommonMessage message) async {
-    await database.transaction((transaction) async {
-      CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
+    await database.transaction(
+      (transaction) async {
+        CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
 
-      commonMessageProviderWithTransaction.insert(message);
+        commonMessageProviderWithTransaction.insert(message);
 
-      ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
+        ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
 
-      int chatId = message.chatId;
-      Chat? chat = await chatProviderWithTransaction.get(chatId);
+        int chatId = message.chatId;
+        Chat? chat = await chatProviderWithTransaction.get(chatId);
 
-      if (chat == null) {
-        chatProviderWithTransaction.insert(
-          Chat(
-            id: chatId,
-            uuid: uuid,
-            targetId: message.senderId,
-            isWithOtherUser: true,
-            numberOfUnreadMessages: 1,
-            lastMessageId: message.id,
-            updatedTime: message.createdTime,
-          ),
-        );
-        CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
-        commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageSendByMe: null, isRead: null, readTime: null, updatedTime: message.createdTime));
-      } else {
-        chatProviderWithTransaction.update({
-          'isDeleted': 0,
-          'lastMessageId': message.id,
-          'numberOfUnreadMessages': chat.numberOfUnreadMessages + 1,
-          'updatedTime': message.createdTime.millisecondsSinceEpoch,
-        }, chatId);
-      }
-    });
+        if (chat == null) {
+          chatProviderWithTransaction.insert(
+            Chat(
+              id: chatId,
+              uuid: uuid,
+              targetId: message.senderId,
+              isWithOtherUser: true,
+              numberOfUnreadMessages: 1,
+              lastMessageId: message.id,
+              updatedTime: message.createdTime,
+            ),
+          );
+          CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+          commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageBeReadSendByMe: null, readTime: null, updatedTime: message.createdTime),);
+        } else {
+          chatProviderWithTransaction.update({
+            'isDeleted': 0,
+            'lastMessageId': message.id,
+            'numberOfUnreadMessages': chat.numberOfUnreadMessages + 1,
+            'updatedTime': message.createdTime.millisecondsSinceEpoch,
+          }, chatId);
+        }
+      },
+    );
   }
 
   void readMessages(int chatId) async {
-    await database.transaction((transaction) async {
-      ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
-      int number = await chatProviderWithTransaction.readMessages(chatId);
-      BlocManager().totalNumberOfUnreadMessagesCubit.decrement(number);
-    });
+    await database.transaction(
+      (transaction) async {
+        ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
+        int number = await chatProviderWithTransaction.readMessages(chatId);
+        BlocManager().totalNumberOfUnreadMessagesCubit.decrement(number);
+      },
+    );
   }
 
   void updateCommonChatStatus(CommonChatStatus newStatus) async {
-    await database.transaction((transaction) async {
-      CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
-      CommonChatStatus? commonChatStatus = await commonChatStatusProviderWithTransaction.get(newStatus.chatId);
-      if(commonChatStatus == null)
-      {
-        commonChatStatusProviderWithTransaction.insert(newStatus);
-      }
-      else
-      {
-        commonChatStatusProviderWithTransaction.update(newStatus.toUpdateSql(), newStatus.chatId);
-      }
-    });
+    await database.transaction(
+      (transaction) async {
+        CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
+        CommonChatStatus? commonChatStatus = await commonChatStatusProviderWithTransaction.get(newStatus.chatId);
+        if (commonChatStatus == null) {
+          commonChatStatusProviderWithTransaction.insert(newStatus);
+        } else {
+          commonChatStatusProviderWithTransaction.update(newStatus.toUpdateSql(), newStatus.chatId);
+        }
+      },
+    );
+  }
+
+  void storeNewFriendship(Friendship friendship) async {
+    await database.transaction(
+      (transaction) async {
+        FriendshipProviderWithTransaction friendshipProviderWithTransaction = FriendshipProviderWithTransaction(transaction);
+        friendshipProviderWithTransaction.insert(friendship);
+      },
+    );
   }
 }
