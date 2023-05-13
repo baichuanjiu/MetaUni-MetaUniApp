@@ -5,6 +5,7 @@ import 'package:meta_uni_app/home_page/chats/contacts/reusable_components/receiv
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../bloc/bloc_manager.dart';
+import '../../../bloc/contacts/has_unread_add_friend_request_bloc.dart';
 import '../../../bloc/message/total_number_of_unread_messages_bloc.dart';
 import '../../../database/database_manager.dart';
 import '../../../database/models/user/brief_user_information.dart';
@@ -118,6 +119,7 @@ class _ContactsPageState extends State<ContactsPage> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<TotalNumberOfUnreadMessagesCubit>.value(value: BlocManager().totalNumberOfUnreadMessagesCubit),
+        BlocProvider<HasUnreadAddFriendRequestCubit>.value(value: BlocManager().hasUnreadAddFriendRequestCubit),
       ],
       child: Scaffold(
         body: DefaultTabController(
@@ -173,8 +175,18 @@ class _ContactsPageState extends State<ContactsPage> {
                                 tiles: [
                                   ListTile(
                                     title: const Text('新朋友'),
-                                    trailing: const Icon(
-                                      Icons.chevron_right_outlined,
+                                    trailing: BlocBuilder<HasUnreadAddFriendRequestCubit, bool>(
+                                      builder: (context, state) {
+                                        return state
+                                            ? const Badge(
+                                                child: Icon(
+                                                  Icons.chevron_right_outlined,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.chevron_right_outlined,
+                                              );
+                                      },
                                     ),
                                     onTap: () {
                                       Navigator.push(
