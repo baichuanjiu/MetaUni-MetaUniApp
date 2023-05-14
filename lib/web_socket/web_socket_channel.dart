@@ -3,6 +3,7 @@ import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
 import 'package:meta_uni_app/database/models/message/common_message.dart';
 import 'package:meta_uni_app/web_socket/models/read_messages_request_data.dart';
+import 'package:meta_uni_app/web_socket/models/sync_common_messages_request_data.dart';
 import 'package:meta_uni_app/web_socket/web_socket_helper.dart';
 import 'package:web_socket_channel/io.dart';
 import '../bloc/chat_list_tile/models/chat_list_tile_update_data.dart';
@@ -22,7 +23,7 @@ class WebSocketChannel {
   late WebSocketHelper _webSocketHelper;
   late BlocManager _blocManager;
 
-  initChannel(WebSocketHelper webSocketHelper, BlocManager blocManager) {
+  initChannel(WebSocketHelper webSocketHelper, BlocManager blocManager,int sequenceForCommonMessages) {
     _webSocketHelper = webSocketHelper;
     _blocManager = blocManager;
     _channel = IOWebSocketChannel.connect(
@@ -54,6 +55,16 @@ class WebSocketChannel {
             ChatListTileUpdateData(chatId: commonMessage.chatId),
           );
           break;
+        case "SyncCommonMessagesSucceed":
+          List<dynamic> dataList = map["dataList"];
+          for (List<dynamic> messages in dataList) {
+            _webSocketHelper.storeNewCommonMessagesList(messages);
+            _blocManager.chatListTileDataCubit.shouldUpdate(
+              ChatListTileUpdateData(chatId: messages[0]["chatId"]),
+            );
+          }
+          _webSocketHelper.updateSequenceForCommonMessages(map["currentSequence"]);
+          break;
         case "NewAddFriendRequest":
           _blocManager.hasUnreadAddFriendRequestCubit.update(true);
           break;
@@ -65,9 +76,11 @@ class WebSocketChannel {
           break;
       }
     }, onDone: () {
-      //initChannel(webSocketHelper, blocManager);
       print("掉线了");
     });
+    sendSyncCommonMessagesRequestData(
+      sequenceForCommonMessages,
+    );
   }
 
   closeChannel() {
@@ -78,6 +91,14 @@ class WebSocketChannel {
     _channel.sink.add(
       jsonEncode(
         ReadMessagesRequestData(uuid: _webSocketHelper.uuid, jwt: _webSocketHelper.jwt, chatId: chatId),
+      ),
+    );
+  }
+
+  sendSyncCommonMessagesRequestData(int sequence) {
+    _channel.sink.add(
+      jsonEncode(
+        SyncCommonMessagesRequestData(uuid: _webSocketHelper.uuid, jwt: _webSocketHelper.jwt, sequence: sequence),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:meta_uni_app/bloc/bloc_manager.dart';
 import 'package:meta_uni_app/database/models/chat/common_chat_status.dart';
+import 'package:meta_uni_app/database/models/user/user_sync_table.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_manager.dart';
 import '../database/models/chat/chat.dart';
@@ -31,7 +32,14 @@ class WebSocketHelper {
       (transaction) async {
         CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
 
-        commonMessageProviderWithTransaction.insert(message);
+        if(await commonMessageProviderWithTransaction.hasThisMessage(message.id)){
+        }
+        else{
+          commonMessageProviderWithTransaction.insert(message);
+        }
+
+        UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+        userSyncTableProviderWithTransaction.updateSequenceForCommonMessages(uuid, message.sequence);
 
         ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
 
@@ -51,7 +59,9 @@ class WebSocketHelper {
             ),
           );
           CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
-          commonChatStatusProviderWithTransaction.insert(CommonChatStatus(chatId: chatId, lastMessageBeReadSendByMe: null, readTime: null, updatedTime: message.createdTime),);
+          commonChatStatusProviderWithTransaction.insert(
+            CommonChatStatus(chatId: chatId, lastMessageBeReadSendByMe: null, readTime: null, updatedTime: message.createdTime),
+          );
         } else {
           chatProviderWithTransaction.update({
             'isDeleted': 0,
@@ -86,6 +96,32 @@ class WebSocketHelper {
         }
       },
     );
+  }
+
+  Future<int> getSequenceForCommonMessages() async {
+    UserSyncTableProvider userSyncTableProvider = UserSyncTableProvider(database);
+    return (await userSyncTableProvider.getSequenceForCommonMessages(uuid))!;
+  }
+
+  void storeNewCommonMessagesList(List<dynamic> messages) async {
+    await database.transaction(
+      (transaction) async {
+        CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
+
+        for (var message in messages) {
+          if(await commonMessageProviderWithTransaction.hasThisMessage(message["id"])){
+          }
+          else{
+            commonMessageProviderWithTransaction.insert(CommonMessage.fromJson(message));
+          }
+        }
+      },
+    );
+  }
+
+  void updateSequenceForCommonMessages(int sequence) async {
+    UserSyncTableProvider userSyncTableProvider = UserSyncTableProvider(database);
+    userSyncTableProvider.updateSequenceForCommonMessages(uuid, sequence);
   }
 
   void storeNewFriendship(Friendship friendship) async {

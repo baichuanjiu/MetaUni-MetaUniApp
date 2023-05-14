@@ -23,7 +23,7 @@ class UserSyncTable {
     required this.lastSyncTimeForFriendsBriefInformation,
   });
 
-  UserSyncTable.init(this.uuid){
+  UserSyncTable.init(this.uuid) {
     id = 0;
     sequenceForCommonMessages = -1;
     sequenceForSystemMessages = -1;
@@ -56,7 +56,7 @@ class UserSyncTable {
       'updatedTimeForFriendships': updatedTimeForFriendships.millisecondsSinceEpoch,
       'updatedTimeForChats': updatedTimeForChats.millisecondsSinceEpoch,
       'lastSyncTimeForCommonChatStatuses': lastSyncTimeForCommonChatStatuses.millisecondsSinceEpoch,
-      'lastSyncTimeForFriendsBriefInformation':lastSyncTimeForFriendsBriefInformation.millisecondsSinceEpoch,
+      'lastSyncTimeForFriendsBriefInformation': lastSyncTimeForFriendsBriefInformation.millisecondsSinceEpoch,
     };
   }
 
@@ -90,6 +90,26 @@ class UserSyncTableProvider {
     }
     return null;
   }
+
+  Future<int?> getSequenceForCommonMessages(int uuid) async {
+    List<Map<String, dynamic>> maps = await database.query('userSyncTable', columns: ["sequenceForCommonMessages"], where: "uuid=?", whereArgs: [uuid]);
+    if (maps.isNotEmpty) {
+      return maps.first["sequenceForCommonMessages"];
+    }
+    return null;
+  }
+
+  Future<bool> updateSequenceForCommonMessages(int uuid, int sequence) async {
+    await database.update(
+      'userSyncTable',
+      {
+        'sequenceForCommonMessages': sequence,
+      },
+      where: "uuid=?",
+      whereArgs: [uuid],
+    );
+    return true;
+  }
 }
 
 class UserSyncTableProviderWithTransaction {
@@ -104,6 +124,18 @@ class UserSyncTableProviderWithTransaction {
 
   Future<bool> update(Map<String, dynamic> values, int uuid) async {
     await transaction.update('userSyncTable', values, where: "uuid=?", whereArgs: [uuid]);
+    return true;
+  }
+
+  Future<bool> updateSequenceForCommonMessages(int uuid, int sequence) async {
+    await transaction.update(
+      'userSyncTable',
+      {
+        'sequenceForCommonMessages': sequence,
+      },
+      where: "uuid=?",
+      whereArgs: [uuid],
+    );
     return true;
   }
 

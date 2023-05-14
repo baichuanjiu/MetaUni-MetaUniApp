@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
 
   final DioModel dioModel = DioModel();
 
-  checkHasUnreadAddFriendRequest()async{
+  checkHasUnreadAddFriendRequest() async {
     final prefs = await SharedPreferences.getInstance();
 
     final String? jwt = prefs.getString('jwt');
@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
       );
       switch (response.data['code']) {
         case 1:
-        //Message:"使用了无效的JWT，请重新登录"
+          //Message:"使用了无效的JWT，请重新登录"
           if (mounted) {
             getNormalSnackBar(context, response.data['message']);
             logout(context);
@@ -371,9 +371,14 @@ class _HomePageState extends State<HomePage> {
     final int? uuid = prefs.getInt('uuid');
 
     if (jwt != null && uuid != null) {
-      WebSocketHelper().initHelper(uuid, jwt);
+      await WebSocketHelper().initHelper(uuid, jwt);
       BlocManager();
-      WebSocketChannel().initChannel(WebSocketHelper(), BlocManager());
+      int sequenceForCommonMessages = await WebSocketHelper().getSequenceForCommonMessages();
+      WebSocketChannel().initChannel(
+        WebSocketHelper(),
+        BlocManager(),
+        sequenceForCommonMessages,
+      );
     }
   }
 
