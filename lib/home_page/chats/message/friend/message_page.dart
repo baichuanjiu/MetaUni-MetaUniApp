@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:meta_uni_app/bloc/message/common_chat_status_bloc.dart';
 import 'package:meta_uni_app/bloc/message/common_message_bloc.dart';
+import 'package:meta_uni_app/database/models/user/user_sync_table.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../bloc/bloc_manager.dart';
@@ -148,6 +149,9 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
 
       commonMessageProviderWithTransaction.insert(message);
 
+      UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+      userSyncTableProviderWithTransaction.updateSequenceForCommonMessages(uuid, message.sequence);
+
       ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
       CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
 
@@ -203,8 +207,6 @@ class _FriendMessagePageState extends State<FriendMessagePage> {
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
-
-    //后续要修改，首先有可能进入该页面时还没有ChatId
 
     chatTargetInformation = ModalRoute.of(context)!.settings.arguments as BriefChatTargetInformation;
     database = await DatabaseManager().getDatabase;

@@ -14,6 +14,7 @@ import '../../../../../database/models/chat/chat.dart';
 import '../../../../../database/models/chat/common_chat_status.dart';
 import '../../../../../database/models/friend/friends_group.dart';
 import '../../../../../database/models/message/common_message.dart';
+import '../../../../../database/models/user/user_sync_table.dart';
 import '../../../../../models/dio_model.dart';
 import '../../../../../reusable_components/logout/logout.dart';
 import '../../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
@@ -145,6 +146,9 @@ class _ReceiveAddFriendRequestPageState extends State<ReceiveAddFriendRequestPag
       CommonMessageProviderWithTransaction commonMessageProviderWithTransaction = CommonMessageProviderWithTransaction(transaction);
 
       commonMessageProviderWithTransaction.insert(message);
+
+      UserSyncTableProviderWithTransaction userSyncTableProviderWithTransaction = UserSyncTableProviderWithTransaction(transaction);
+      userSyncTableProviderWithTransaction.updateSequenceForCommonMessages(uuid, message.sequence);
 
       ChatProviderWithTransaction chatProviderWithTransaction = ChatProviderWithTransaction(transaction);
       CommonChatStatusProviderWithTransaction commonChatStatusProviderWithTransaction = CommonChatStatusProviderWithTransaction(transaction);
