@@ -13,9 +13,9 @@ class ReadMessagesRequestData {
   Map<String, dynamic> toJson() {
     return {
       'type': type,
+      'uuid': uuid,
+      'jwt': jwt,
       'data': {
-        'UUID': uuid,
-        'JWT': jwt,
         'ChatId': chatId,
       },
     };
