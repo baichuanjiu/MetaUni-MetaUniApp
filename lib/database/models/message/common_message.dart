@@ -164,4 +164,12 @@ class CommonMessageProviderWithTransaction {
     }
     return null;
   }
+
+  Future<bool> hasThisMessage(int id) async {
+    List<Map<String, dynamic>> maps = await transaction.query('commonMessage',columns: ["id"], where: "id=?", whereArgs: [id]);
+    if (maps.isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
 }
