@@ -8,6 +8,8 @@ import 'home_page/chats/contacts/contacts_page.dart';
 import 'home_page/chats/contacts/search/contacts_search_page.dart';
 import 'home_page/chats/message/friend/message_page.dart';
 import 'home_page/chats/search/search_page.dart';
+import 'home_page/discover/warehouse/mini_app_introduction/client_app_introduction_page.dart';
+import 'home_page/discover/warehouse/mini_app_introduction/web_app_introduction_page.dart';
 import 'home_page/discover/warehouse/search/search_page.dart';
 import 'home_page/home_page.dart';
 import 'home_page/me/settings/settings_page.dart';
@@ -142,6 +144,8 @@ class _MetaUni extends State<MetaUni> {
                   '/contacts/search/result/user': (context) => const UserSearchResultPage(),
                   '/contacts/add/friend': (context) => const AddFriendRequestPage(),
                   '/discover/warehouse/search': (context) => const DiscoverWarehouseSearchPage(),
+                  '/discover/warehouse/clientApp/introduction': (context) => const ClientAppIntroductionPage(),
+                  '/discover/warehouse/webApp/introduction': (context) => const WebAppIntroductionPage(),
                   '/user/profile': (context) => const UserProfilePage(),
                   '/settings': (context) => const SettingsPage(),
                   '/settings/seedColor': (context) => const ChangeSeedColorPage(),
