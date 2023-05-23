@@ -12,6 +12,7 @@ import '../../../../models/dio_model.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
+import '../../reusable_components/web_view/web_view_page.dart';
 import '../models/web_app.dart';
 import 'models/mini_app_introduction.dart';
 import 'models/mini_app_review.dart';
@@ -59,6 +60,17 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
       Icons.arrow_back_ios_new_outlined,
     ),
   );
+  late FilledButton startButton = FilledButton.tonal(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WebViewPage(title: webApp.name,url: webApp.url,),
+        ),
+      );
+    },
+    child: const Text("开始使用"),
+  );
   late Widget _leading = backUpButtonWithOpacity;
   late final Widget _title = FadeTransition(
     opacity: fadeInAnimation,
@@ -85,10 +97,7 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
       opacity: fadeInAnimation,
       child: Container(
         padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-        child: FilledButton.tonal(
-          onPressed: () {},
-          child: const Text("开始使用"),
-        ),
+        child: startButton,
       ),
     ),
   ];
@@ -409,10 +418,7 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
                                       children: [
                                         Row(
                                           children: [
-                                            FilledButton.tonal(
-                                              onPressed: () {},
-                                              child: const Text("开始使用"),
-                                            ),
+                                            startButton,
                                           ],
                                         ),
                                         IconButton(
@@ -542,13 +548,24 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
                     ),
                   ),
                   const SliverDivider(),
-                  IntroductionPreview(preview: preview,),
+                  IntroductionPreview(
+                    preview: preview,
+                  ),
                   const SliverDivider(),
-                  IntroductionGuide(guide:miniAppIntroduction.guide,),
+                  IntroductionGuide(
+                    guide: miniAppIntroduction.guide,
+                  ),
                   const SliverDivider(),
-                  RatingsAndReviews(latestReview: latestReview, averageOfRatingsString: averageOfRatingsString, totalNumberOfRatingPeople: totalNumberOfRatingPeople, totalNumberOfRatingPeopleString: totalNumberOfRatingPeopleString, stars: miniAppIntroduction.stars),
+                  RatingsAndReviews(
+                      latestReview: latestReview,
+                      averageOfRatingsString: averageOfRatingsString,
+                      totalNumberOfRatingPeople: totalNumberOfRatingPeople,
+                      totalNumberOfRatingPeopleString: totalNumberOfRatingPeopleString,
+                      stars: miniAppIntroduction.stars),
                   const SliverDivider(),
-                  IntroductionReadme(readme:miniAppIntroduction.readme,),
+                  IntroductionReadme(
+                    readme: miniAppIntroduction.readme,
+                  ),
                 ],
               ),
             );

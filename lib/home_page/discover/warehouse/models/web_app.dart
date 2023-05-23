@@ -5,7 +5,7 @@ class WebApp {
   late String avatar;
   late String description;
   late String backgroundImage;
-  late String? url;
+  late String url;
   late double trendingValue;
 
   WebApp({
