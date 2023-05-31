@@ -11,6 +11,7 @@ import 'package:meta_uni_app/home_page/discover/warehouse/mini_app_introduction/
 import 'package:meta_uni_app/home_page/discover/warehouse/mini_app_introduction/reusable_components/stars/stars.dart';
 import 'package:meta_uni_app/home_page/discover/warehouse/models/mini_app_information.dart';
 import 'package:meta_uni_app/models/dio_model.dart';
+import 'package:meta_uni_app/reusable_components/formatter/number_formatter/number_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
@@ -59,6 +60,16 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
       Icons.arrow_back_ios_new_outlined,
     ),
   );
+  late FilledButton startButton = FilledButton.tonal(
+    onPressed: () {
+      Navigator.pushNamed(
+        context,
+        clientApp.routingURL,
+        arguments: clientApp,
+      );
+    },
+    child: const Text("开始使用"),
+  );
   late Widget _leading = backUpButtonWithOpacity;
   late final Widget _title = FadeTransition(
     opacity: fadeInAnimation,
@@ -85,10 +96,7 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
       opacity: fadeInAnimation,
       child: Container(
         padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-        child: FilledButton.tonal(
-          onPressed: () {},
-          child: const Text("开始使用"),
-        ),
+        child: startButton,
       ),
     ),
   ];
@@ -151,23 +159,11 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
           } else {
             double averageOfRatings = totalNumberOfStars / totalNumberOfRatingPeople;
             averageOfStars = averageOfRatings.round();
-            averageOfRatingsString = averageOfRatings.toStringAsFixed(1);
-            if (totalNumberOfRatingPeople >= 100000) {
-              totalNumberOfRatingPeopleString = "${(totalNumberOfRatingPeople / 10000).round()}W";
-            } else if (totalNumberOfRatingPeople >= 1000) {
-              totalNumberOfRatingPeopleString = "${(totalNumberOfRatingPeople / 1000).round()}K";
-            } else {
-              totalNumberOfRatingPeopleString = totalNumberOfRatingPeople.toString();
-            }
+            averageOfRatingsString = getFormattedDouble(averageOfRatings);
+            totalNumberOfRatingPeopleString = getFormattedInt(totalNumberOfRatingPeople);
           }
 
-          if (miniAppInformation.trendingValue >= 100000) {
-            trendingValueString = "${(miniAppInformation.trendingValue / 10000).round()}W";
-          } else if (miniAppInformation.trendingValue >= 1000) {
-            trendingValueString = "${(miniAppInformation.trendingValue / 1000).round()}K";
-          } else {
-            trendingValueString = miniAppInformation.trendingValue.toStringAsFixed(1);
-          }
+          trendingValueString = getFormattedDouble(miniAppInformation.trendingValue);
 
           for (int i = 0; i < miniAppIntroduction.preview.length; i++) {
             if (i != miniAppIntroduction.preview.length - 1) {
@@ -209,6 +205,8 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
               );
             }
           }
+
+          setState((){});
       }
     } catch (e) {
       if (mounted) {
@@ -409,10 +407,7 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
                                       children: [
                                         Row(
                                           children: [
-                                            FilledButton.tonal(
-                                              onPressed: () {},
-                                              child: const Text("开始使用"),
-                                            ),
+                                            startButton,
                                           ],
                                         ),
                                         IconButton(
@@ -563,13 +558,24 @@ class _ClientAppIntroductionPageState extends State<ClientAppIntroductionPage> w
                     ),
                   ),
                   const SliverDivider(),
-                  IntroductionPreview(preview: preview,),
+                  IntroductionPreview(
+                    preview: preview,
+                  ),
                   const SliverDivider(),
-                  IntroductionGuide(guide:miniAppIntroduction.guide,),
+                  IntroductionGuide(
+                    guide: miniAppIntroduction.guide,
+                  ),
                   const SliverDivider(),
-                  RatingsAndReviews(latestReview: latestReview, averageOfRatingsString: averageOfRatingsString, totalNumberOfRatingPeople: totalNumberOfRatingPeople, totalNumberOfRatingPeopleString: totalNumberOfRatingPeopleString, stars: miniAppIntroduction.stars),
+                  RatingsAndReviews(
+                      latestReview: latestReview,
+                      averageOfRatingsString: averageOfRatingsString,
+                      totalNumberOfRatingPeople: totalNumberOfRatingPeople,
+                      totalNumberOfRatingPeopleString: totalNumberOfRatingPeopleString,
+                      stars: miniAppIntroduction.stars),
                   const SliverDivider(),
-                  IntroductionReadme(readme:miniAppIntroduction.readme,),
+                  IntroductionReadme(
+                    readme: miniAppIntroduction.readme,
+                  ),
                 ],
               ),
             );

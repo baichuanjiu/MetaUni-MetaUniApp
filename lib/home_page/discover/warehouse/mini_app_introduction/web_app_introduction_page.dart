@@ -9,10 +9,11 @@ import 'package:meta_uni_app/home_page/discover/warehouse/mini_app_introduction/
 import 'package:meta_uni_app/home_page/discover/warehouse/models/mini_app_information.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../models/dio_model.dart';
+import '../../../../reusable_components/formatter/number_formatter/number_formatter.dart';
 import '../../../../reusable_components/logout/logout.dart';
 import '../../../../reusable_components/snack_bar/network_error_snack_bar.dart';
 import '../../../../reusable_components/snack_bar/normal_snack_bar.dart';
-import '../../reusable_components/web_view/web_view_page.dart';
+import '../../../../reusable_components/web_view/web_view_page.dart';
 import '../models/web_app.dart';
 import 'models/mini_app_introduction.dart';
 import 'models/mini_app_review.dart';
@@ -160,23 +161,11 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
           } else {
             double averageOfRatings = totalNumberOfStars / totalNumberOfRatingPeople;
             averageOfStars = averageOfRatings.round();
-            averageOfRatingsString = averageOfRatings.toStringAsFixed(1);
-            if (totalNumberOfRatingPeople >= 100000) {
-              totalNumberOfRatingPeopleString = "${(totalNumberOfRatingPeople / 10000).round()}W";
-            } else if (totalNumberOfRatingPeople >= 1000) {
-              totalNumberOfRatingPeopleString = "${(totalNumberOfRatingPeople / 1000).round()}K";
-            } else {
-              totalNumberOfRatingPeopleString = totalNumberOfRatingPeople.toString();
-            }
+            averageOfRatingsString = getFormattedDouble(averageOfRatings);
+            totalNumberOfRatingPeopleString = getFormattedInt(totalNumberOfRatingPeople);
           }
 
-          if (miniAppInformation.trendingValue >= 100000) {
-            trendingValueString = "${(miniAppInformation.trendingValue / 10000).round()}W";
-          } else if (miniAppInformation.trendingValue >= 1000) {
-            trendingValueString = "${(miniAppInformation.trendingValue / 1000).round()}K";
-          } else {
-            trendingValueString = miniAppInformation.trendingValue.toStringAsFixed(1);
-          }
+          trendingValueString = getFormattedDouble(miniAppInformation.trendingValue);
 
           for (int i = 0; i < miniAppIntroduction.preview.length; i++) {
             if (i != miniAppIntroduction.preview.length - 1) {
@@ -218,6 +207,8 @@ class _WebAppIntroductionPageState extends State<WebAppIntroductionPage> with Ti
               );
             }
           }
+
+          setState((){});
       }
     } catch (e) {
       if (mounted) {

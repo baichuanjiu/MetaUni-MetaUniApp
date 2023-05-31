@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:meta_uni_app/reusable_components/formatter/date_time_formatter/date_time_formatter.dart';
 import 'models/brief_chat_target_information.dart';
 import 'models/chat_list_tile_data.dart';
 
@@ -140,14 +141,14 @@ class _ChatListTileState extends State<ChatListTile> with TickerProviderStateMix
                             ),
                             trailing: widget.chatListTileData.numberOfUnreadMessages == 0
                                 ? Text(
-                                    widget.chatListTileData.lastMessageCreatedTime?.toString().substring(11, 16) ?? '',
+                              widget.chatListTileData.lastMessageCreatedTime == null?'':getFormattedDateTime(dateTime: widget.chatListTileData.lastMessageCreatedTime!),
                                     style: Theme.of(context).textTheme.labelMedium?.apply(color: Theme.of(context).colorScheme.outline),
                                   )
                                 : Column(
                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
                                       Text(
-                                        widget.chatListTileData.lastMessageCreatedTime?.toString().substring(11, 16) ?? '',
+                                        widget.chatListTileData.lastMessageCreatedTime == null?'':getFormattedDateTime(dateTime: widget.chatListTileData.lastMessageCreatedTime!),
                                         style: Theme.of(context).textTheme.labelMedium?.apply(color: Theme.of(context).colorScheme.outline),
                                       ),
                                       Badge(

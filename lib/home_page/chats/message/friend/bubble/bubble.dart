@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:meta_uni_app/reusable_components/formatter/date_time_formatter/date_time_formatter.dart';
 import '../../../../../database/models/message/common_message.dart';
 import '../../../../../database/models/user/brief_user_information.dart';
 import 'bubble_helper.dart';
@@ -231,7 +232,7 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
                 width: 5,
               ),
               Text(
-                repliedMessage.createdTime.toString().substring(11, 16),
+                getFormattedDateTime(dateTime: repliedMessage.createdTime,shouldShowTime: true),
                 style: Theme.of(context).textTheme.labelMedium?.apply(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
@@ -375,12 +376,11 @@ class _CommonMessageBubbleState extends State<CommonMessageBubble> with TickerPr
             height: 15,
             child: widget.isRead
                 ? Text(
-                    "已读  ${widget.readTime.toString().substring(11, 16)}",
+                    "已读  ${getFormattedDateTime(dateTime: widget.readTime!,shouldShowTime: true)}",
                     style: Theme.of(context).textTheme.labelSmall!.apply(color: Theme.of(context).colorScheme.outline),
                   )
                 : Text(
-                    //待调整
-                    widget.message.createdTime.toString().substring(11, 16),
+              getFormattedDateTime(dateTime: widget.message.createdTime,shouldShowTime: true),
                     style: Theme.of(context).textTheme.labelSmall!.apply(color: Theme.of(context).colorScheme.outline),
                   ),
           ),
