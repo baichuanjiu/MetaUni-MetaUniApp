@@ -20,7 +20,7 @@ class IntroductionReadme extends StatelessWidget {
             Container(
               height: 10,
             ),
-            Text(
+            SelectableText(
               readme,
               style: Theme.of(context).textTheme.bodyMedium,
             ),

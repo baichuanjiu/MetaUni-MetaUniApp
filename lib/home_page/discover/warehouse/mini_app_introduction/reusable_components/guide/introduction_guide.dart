@@ -13,7 +13,7 @@ class IntroductionGuide extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            SelectableText(
               guide,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
