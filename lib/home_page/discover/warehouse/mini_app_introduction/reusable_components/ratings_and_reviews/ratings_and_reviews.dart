@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meta_uni_app/home_page/discover/warehouse/mini_app_introduction/models/mini_app_review.dart';
+import 'package:meta_uni_app/reusable_components/formatter/date_time_formatter/date_time_formatter.dart';
 
 import '../ratings/ratings.dart';
 import '../stars/stars_rating.dart';
@@ -86,7 +87,7 @@ class RatingsAndReviews extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
                                       Text(
-                                        latestReview!.createdTime.toString().substring(0, 10),
+                                        getFormattedDateTime(dateTime: latestReview!.createdTime),
                                         style: Theme.of(context).textTheme.labelSmall?.apply(color: Theme.of(context).colorScheme.outline),
                                       ),
                                       Text(
