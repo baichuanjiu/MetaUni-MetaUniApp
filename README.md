@@ -63,14 +63,23 @@
 本仓库为MetaUni移动端代码仓库，同时也是MetaUni项目的主体仓库。若要查看MetaUni项目下的其它代码仓库，可参阅该仓库目录：  
 - [MetaUni-MetaUniGateWay 主体网关](https://github.com/baichuanjiu/MetaUni-MetaUniGateway)
 - [MetaUni-MetaUniServer 主体服务器](https://github.com/baichuanjiu/MetaUni-MetaUniServer)
+- [MetaUni-Database 主体数据库](https://github.com/baichuanjiu/MetaUni-Database)
+- [MetaUni-Middleware 主体中间件](https://github.com/baichuanjiu/MetaUni-Middleware)
 - [MetaUni-UnifiedAssistantRpcServer 提供接口供小程序调用的RPC服务器](https://github.com/baichuanjiu/MetaUni-UnifiedAssistantRpcServer)
 - [MetaUni-WallSticker-WallStickerGateway 小程序“墙贴”网关](https://github.com/baichuanjiu/MetaUni-WallSticker-WallStickerGateway)
 - [MetaUni-WallSticker-WallStickerServer 小程序“墙贴”服务器](https://github.com/baichuanjiu/MetaUni-WallSticker-WallStickerServer)
+- [MetaUni-WallSticker-Database 小程序“墙贴”数据库](https://github.com/baichuanjiu/MetaUni-WallSticker-Database)
+- [MetaUni-WallSticker-Middleware 小程序“墙贴”中间件](https://github.com/baichuanjiu/MetaUni-WallSticker-Middleware)
 - [MetaUni-ChatRoom-ChatRoomServer 小程序“聊聊屋”服务器](https://github.com/baichuanjiu/MetaUni-ChatRoom-ChatRoomServer)
+- [MetaUni-ChatRoom-Middleware 小程序“聊聊屋”中间件](https://github.com/baichuanjiu/MetaUni-ChatRoom-Middleware)
 - [MetaUni-SeekPartner-SeekPartnerGateway 小程序“搭搭”网关](https://github.com/baichuanjiu/MetaUni-SeekPartner-SeekPartnerGateway)
 - [MetaUni-SeekPartner-SeekPartnerServer 小程序“搭搭”服务器](https://github.com/baichuanjiu/MetaUni-SeekPartner-SeekPartnerServer)
+- [MetaUni-SeekPartner-Database 小程序“搭搭”数据库](https://github.com/baichuanjiu/MetaUni-SeekPartner-Database)
+- [MetaUni-SeekPartner-Middleware 小程序“搭搭”中间件](https://github.com/baichuanjiu/MetaUni-SeekPartner-Middleware)
 - [MetaUni-FleaMarket-FleaMarketGateway 小程序“中古”网关](https://github.com/baichuanjiu/MetaUni-FleaMarket-FleaMarketGateway)
 - [MetaUni-FleaMarket-FleaMarketServer 小程序“中古”服务器](https://github.com/baichuanjiu/MetaUni-FleaMarket-FleaMarketServer)
+- [MetaUni-FleaMarket-Database 小程序“中古”数据库](https://github.com/baichuanjiu/MetaUni-FleaMarket-Database)
+- [MetaUni-FleaMarket-Middleware 小程序“中古”中间件](https://github.com/baichuanjiu/MetaUni-FleaMarket-Middleware)
 
 # 简介
 
